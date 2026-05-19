@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
@@ -8,7 +9,8 @@ import '../widgets/shared_widgets.dart';
 import '../services/workout_history_store.dart';
 import '../services/prefs_service.dart';
 import '../utils/weight_unit.dart';
-import 'active_workout_screen.dart' show CompletedWorkout;
+import '../models/workout.dart' show CompletedWorkout;
+import 'exercise_detail_screen.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -18,7 +20,7 @@ class ProgressScreen extends StatefulWidget {
 }
 
 class _ProgressScreenState extends State<ProgressScreen> {
-  String _period = 'month';
+  String _period = 'week';
 
   Future<void> _showBwLog(BuildContext ctx) async {
     final c = Theme.of(ctx).extension<AppColors>()!;
@@ -50,7 +52,21 @@ class _ProgressScreenState extends State<ProgressScreen> {
             final workouts = WorkoutHistoryStore.workoutsInPeriod(_period);
             final volume   = WorkoutHistoryStore.totalVolumeInPeriod(_period);
             final prs      = WorkoutHistoryStore.allTimePRs;
-            final weekly   = WorkoutHistoryStore.weeklyVolumes();
+            final chartData = switch (_period) {
+              'month' => WorkoutHistoryStore.monthlyVolumes(),
+              'year'  => WorkoutHistoryStore.yearlyVolumes(),
+              _       => WorkoutHistoryStore.weeklyVolumes(),
+            };
+
+            final now = DateTime.now();
+            final periodCutoff = switch (_period) {
+              'month' => now.subtract(const Duration(days: 30)),
+              'year'  => now.subtract(const Duration(days: 365)),
+              _       => now.subtract(const Duration(days: 7)),
+            };
+            final filteredHistory = history
+                .where((w) => w.completedAt.isAfter(periodCutoff))
+                .toList();
 
             final volLabel = WeightUnit.isLbs
                 ? (volume * 2.20462 >= 1000
@@ -60,126 +76,131 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     ? '${(volume / 1000).toStringAsFixed(1)}k'
                     : volume.toStringAsFixed(0));
 
+            final periodLabel = _period[0].toUpperCase() + _period.substring(1);
+
             return CustomScrollView(
               slivers: [
+                // ── Header with period selector ──────────────────
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(
                       AppSpacing.md, AppSpacing.lg,
                       AppSpacing.md, AppSpacing.md),
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Progress',
-                          style: AppTypography.displayL(c.textPrimary).copyWith(
-                            fontSize: 34, letterSpacing: -1),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Progress',
+                                style: AppTypography.displayL(c.textPrimary)
+                                    .copyWith(fontSize: 34, letterSpacing: -1),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Strength, volume & consistency.',
+                                style: AppTypography.bodyS(c.textSecondary)
+                                    .copyWith(fontSize: 13),
+                              ),
+                            ],
+                          ),
                         ),
-                        const Spacer(),
-                        _PeriodSegment(
-                          selected: _period,
-                          onSelect: (p) => setState(() => _period = p),
-                          c: c,
+                        const SizedBox(width: 12),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 7),
+                          child: _PeriodSelector(
+                            selected: _period,
+                            onSelect: (p) => setState(() => _period = p),
+                            c: c,
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ),
+
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.md, 0, AppSpacing.md, 80),
+                    AppSpacing.md, 0, AppSpacing.md, 100),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
 
-                      // ── KPI strip ──────────────────────────
+                      // ── KPI strip ──────────────────────────────
                       Row(
                         children: [
-                          Expanded(child: _BigStatCard(
-                            value: volLabel,
-                            unit: WeightUnit.suffix,
+                          Expanded(child: _KpiCard(
+                            value: volume <= 0 ? '0' : volLabel,
+                            unit: volume <= 0 ? WeightUnit.suffix : WeightUnit.suffix,
                             label: 'Volume',
+                            sublabel: 'This $_period',
                             accent: false,
                             c: c,
                           )),
-                          const SizedBox(width: 10),
-                          Expanded(child: _BigStatCard(
+                          const SizedBox(width: 8),
+                          Expanded(child: _KpiCard(
                             value: '$workouts',
                             unit: '',
-                            label: 'Workouts',
+                            label: 'Sessions',
+                            sublabel: 'This $_period',
                             accent: false,
                             c: c,
                           )),
-                          const SizedBox(width: 10),
-                          Expanded(child: _BigStatCard(
-                            value: '$streak',
-                            unit: '',
+                          const SizedBox(width: 8),
+                          Expanded(child: _KpiCard(
+                            value: streak <= 0 ? 'Start' : '$streak',
+                            unit: streak > 0 ? 'days' : '',
                             label: 'Streak',
-                            accent: true,
+                            sublabel: 'All time',
+                            accent: streak > 0,
                             c: c,
                           )),
                         ],
                       ),
                       const SizedBox(height: 20),
 
-                      // ── Weekly Volume chart ─────────────────
-                      const SectionHeader(label: 'Weekly Volume'),
-                      const SizedBox(height: AppSpacing.xs),
-                      _WeeklyVolumeChart(data: weekly, c: c),
-                      const SizedBox(height: 20),
+                      // ── Volume chart ────────────────────────────
+                      const SectionHeader(label: 'Training Volume'),
+                      _VolumeChart(
+                        data: chartData,
+                        periodLabel: periodLabel,
+                        c: c,
+                      ),
+                      const SizedBox(height: 24),
 
-                      // ── Volume by Muscle — Pro gated ────────
-                      const SectionHeader(label: 'Volume by Muscle'),
-                      const SizedBox(height: AppSpacing.xs),
-                      _ProGatedMuscleBars(c: c, onUpgrade: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('VELT Pro coming soon — stay tuned!'),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      }),
-                      const SizedBox(height: 20),
-
-                      // ── Personal Records ────────────────────
-                      const SectionHeader(label: 'Personal Records'),
-                      const SizedBox(height: AppSpacing.xs),
-                      if (prs.isEmpty)
-                        _EmptySection(
-                          label: 'Complete workouts to track your PRs',
-                          c: c,
-                        )
-                      else
-                        ...prs.entries.take(8).toList().asMap().entries.map((e) {
-                          final i = e.key;
-                          final entry = e.value;
-                          final weightStr = WeightUnit.format(entry.value.weight);
-                          return Padding(
-                            padding: EdgeInsets.only(
-                              bottom: i < (prs.length - 1).clamp(0, 7) ? 10 : 0),
-                            child: _PRRow(
-                              exercise: entry.key,
-                              value: weightStr,
-                              date: entry.value.dateLabel,
-                              c: c,
-                            ),
-                          );
-                        }),
-                      const SizedBox(height: 20),
-
-                      // ── Bodyweight ──────────────────────────
+                      // ── Bodyweight ──────────────────────────────
                       SectionHeader(
                         label: 'Bodyweight',
-                        action: 'Log',
+                        action: '+ Log today',
                         onAction: () => _showBwLog(context),
                       ),
-                      const SizedBox(height: AppSpacing.xs),
                       _BodyweightCard(
                         c: c,
                         onLog: () => _showBwLog(context),
                       ),
+                      const SizedBox(height: 24),
+
+                      // ── Personal Records ────────────────────────
+                      SectionHeader(
+                        label: prs.isEmpty
+                            ? 'Personal Records'
+                            : 'Personal Records  ·  ${prs.length}',
+                      ),
+                      if (prs.isEmpty)
+                        _EmptySection(
+                          title: 'No records yet',
+                          label: 'Records unlock after completing sets.\nTrain to set your first PR.',
+                          icon: Icons.emoji_events_outlined,
+                          c: c,
+                        )
+                      else
+                        _PRListCard(prs: prs, c: c),
+                      const SizedBox(height: 24),
+
+                      // ── Muscle Balance ───────────────────────────
+                      const SectionHeader(label: 'Muscle Balance'),
+                      _MuscleBreakdownCard(history: filteredHistory, c: c),
                     ]),
                   ),
                 ),
@@ -192,10 +213,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
   }
 }
 
-// ── Period Segment ─────────────────────────────────────────────
-class _PeriodSegment extends StatelessWidget {
-  const _PeriodSegment({
-    required this.selected, required this.onSelect, required this.c});
+// ── Period Selector (pill, amber fill active) ──────────────────
+class _PeriodSelector extends StatelessWidget {
+  const _PeriodSelector(
+      {required this.selected, required this.onSelect, required this.c});
   final String selected;
   final ValueChanged<String> onSelect;
   final AppColors c;
@@ -203,28 +224,38 @@ class _PeriodSegment extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: c.surfaceElevated,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: BorderRadius.circular(AppRadius.full),
+        border: Border.all(color: c.divider.withValues(alpha: 0.5)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: ['week', 'month', 'year'].map((p) {
           final active = selected == p;
+          final label = p[0].toUpperCase() + p.substring(1);
           return GestureDetector(
-            onTap: () => onSelect(p),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onSelect(p);
+            },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
               decoration: BoxDecoration(
                 color: active ? c.accentIron : Colors.transparent,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
+                borderRadius: BorderRadius.circular(AppRadius.full),
               ),
               child: Text(
-                p[0].toUpperCase() + p.substring(1),
+                label,
                 style: AppTypography.bodyS(
-                  active ? Colors.white : c.textTertiary,
-                ).copyWith(fontWeight: FontWeight.w600, fontSize: 11),
+                  active ? c.surface : c.textSecondary,
+                ).copyWith(
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 11,
+                  letterSpacing: 0.1,
+                ),
               ),
             ),
           );
@@ -234,160 +265,74 @@ class _PeriodSegment extends StatelessWidget {
   }
 }
 
-// ── Big Stat Card ──────────────────────────────────────────────
-class _BigStatCard extends StatelessWidget {
-  const _BigStatCard({
-    required this.value, required this.unit, required this.label,
-    required this.accent, required this.c,
+// ── KPI Card ──────────────────────────────────────────────────
+class _KpiCard extends StatelessWidget {
+  const _KpiCard({
+    required this.value,
+    required this.unit,
+    required this.label,
+    required this.accent,
+    required this.c,
+    this.sublabel,
   });
   final String value;
   final String unit;
   final String label;
   final bool accent;
   final AppColors c;
+  final String? sublabel;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.sm, AppSpacing.md, AppSpacing.sm, AppSpacing.md),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: c.surfaceElevated,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
-          color: accent
-              ? c.accentIron.withValues(alpha: 0.3)
-              : c.divider.withValues(alpha: 0.5),
+          color: accent ? c.accentIron : c.divider.withValues(alpha: 0.5),
+          width: accent ? 1.0 : 0.5,
         ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                value,
-                style: AppTypography.displayM(
-                  accent ? c.accentIron : c.textPrimary,
-                ).copyWith(
-                  fontSize: 28, letterSpacing: -0.9, height: 1,
-                  fontFeatures: [const FontFeature.tabularFigures()],
-                ),
-              ),
-              if (unit.isNotEmpty) ...[
-                const SizedBox(width: 3),
-                Text(
-                  unit,
-                  style: AppTypography.bodyS(c.textSecondary).copyWith(
-                    fontWeight: FontWeight.w500, fontSize: 11),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 5),
-          Text(
-            label.toUpperCase(),
-            style: AppTypography.caption(c.textTertiary).copyWith(
-              fontSize: 10, letterSpacing: 0.7),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Weekly Volume Chart ────────────────────────────────────────
-class _WeeklyVolumeChart extends StatelessWidget {
-  const _WeeklyVolumeChart({required this.data, required this.c});
-  final List<({String label, double volume})> data;
-  final AppColors c;
-
-  @override
-  Widget build(BuildContext context) {
-    final maxVol = data.isEmpty
-        ? 1.0
-        : data.map((d) => d.volume).reduce((a, b) => a > b ? a : b);
-    final effectiveMax = maxVol <= 0 ? 1.0 : maxVol;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-      decoration: BoxDecoration(
-        color: c.surfaceElevated,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: c.divider.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (maxVol <= 0)
-            SizedBox(
-              height: 80,
-              child: Center(
-                child: Text(
-                  'Log workouts to see volume trends',
-                  style: AppTypography.bodyS(c.textTertiary).copyWith(
-                    fontSize: 12, fontStyle: FontStyle.italic),
-                ),
-              ),
-            )
-          else ...[
-            SizedBox(
-              height: 80,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: data.map((d) {
-                  final frac = d.volume / effectiveMax;
-                  final isThisWeek = d == data.last;
-                  return Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Flexible(
-                            child: Align(
-                              alignment: Alignment.bottomCenter,
-                              child: FractionallySizedBox(
-                                heightFactor: frac.clamp(0.04, 1.0),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 400),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: isThisWeek
-                                          ? [c.accentIron,
-                                             c.accentIron.withValues(alpha: 0.7)]
-                                          : [c.surfaceHigh,
-                                             c.surfaceHigh],
-                                    ),
-                                    borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(3)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
+          Text(
+            value,
+            style: AppTypography.displayM(
+              accent ? c.accentIron : c.textPrimary,
+            ).copyWith(
+              fontSize: 22,
+              letterSpacing: -0.6,
+              height: 1,
+              fontFeatures: [const FontFeature.tabularFigures()],
             ),
-            const SizedBox(height: 6),
-            Row(
-              children: data.map((d) => Expanded(
-                child: Text(
-                  d.label.split(' ').last, // day number only
-                  textAlign: TextAlign.center,
-                  style: AppTypography.caption(c.textTertiary).copyWith(
-                    fontSize: 8,
-                  ),
-                ),
-              )).toList(),
+          ),
+          if (unit.isNotEmpty) ...[
+            const SizedBox(height: 3),
+            Text(
+              unit,
+              style: AppTypography.caption(c.textSecondary).copyWith(
+                fontSize: 10),
+            ),
+          ],
+          const SizedBox(height: 6),
+          Text(
+            label.toUpperCase(),
+            style: AppTypography.caption(
+              accent ? c.accentIron : c.textTertiary,
+            ).copyWith(
+              fontSize: 10,
+              letterSpacing: 0.8,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (sublabel != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              sublabel!,
+              style: AppTypography.caption(c.textTertiary).copyWith(
+                fontSize: 9, letterSpacing: 0.2),
             ),
           ],
         ],
@@ -396,182 +341,843 @@ class _WeeklyVolumeChart extends StatelessWidget {
   }
 }
 
-// ── Pro Gated Muscle Bars ──────────────────────────────────────
-class _ProGatedMuscleBars extends StatelessWidget {
-  const _ProGatedMuscleBars({required this.c, required this.onUpgrade});
+// ── Volume Chart with y-axis labels + touch tooltip ───────────
+class _VolumeChart extends StatefulWidget {
+  const _VolumeChart({
+    required this.data,
+    required this.c,
+    required this.periodLabel,
+  });
+  final List<({String label, double volume})> data;
   final AppColors c;
-  final VoidCallback onUpgrade;
+  final String periodLabel;
 
-  static const _muscles = [
-    (name: 'Chest',     pct: 0.85),
-    (name: 'Back',      pct: 0.70),
-    (name: 'Shoulders', pct: 0.60),
-    (name: 'Legs',      pct: 0.90),
-    (name: 'Arms',      pct: 0.40),
-  ];
+  @override
+  State<_VolumeChart> createState() => _VolumeChartState();
+}
+
+class _VolumeChartState extends State<_VolumeChart> {
+  int? _hoveredIndex;
+
+  void _onTouch(double localX, double chartWidth) {
+    if (widget.data.isEmpty || chartWidth <= 0) return;
+    final idx = (localX / chartWidth * widget.data.length)
+        .floor()
+        .clamp(0, widget.data.length - 1);
+    if (_hoveredIndex != idx) {
+      HapticFeedback.selectionClick();
+      setState(() => _hoveredIndex = idx);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final data = widget.data;
+    final c = widget.c;
+    final volumes = data.map((d) => d.volume).toList();
+    final maxVol = volumes.isEmpty
+        ? 0.0
+        : volumes.reduce((a, b) => a > b ? a : b);
+    final effectiveMax = maxVol <= 0 ? 1.0 : maxVol;
+
+    final yMid = (effectiveMax / 2 / 1000).round() * 1000.0;
+    final yTop = (effectiveMax / 1000).round() * 1000.0;
+
+    String yLabel(double v) {
+      if (v >= 1000) return '${(v / 1000).toStringAsFixed(0)}k';
+      return v.toStringAsFixed(0);
+    }
+
+    final periodLower = widget.periodLabel.toLowerCase();
+    final nonEmpty = data.where((d) => d.volume > 0).length;
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
       decoration: BoxDecoration(
         color: c.surfaceElevated,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: c.divider.withValues(alpha: 0.5)),
       ),
-      child: Stack(
-        children: [
-          Column(
-            children: _muscles.map((m) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 70,
-                    child: Text(m.name,
-                      style: AppTypography.bodyS(c.textSecondary)
-                          .copyWith(fontSize: 11)),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Container(
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: c.surfaceHigh,
-                        borderRadius: BorderRadius.circular(AppRadius.full),
-                      ),
-                      child: FractionallySizedBox(
-                        alignment: Alignment.centerLeft,
-                        widthFactor: m.pct,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: c.accentIron,
-                            borderRadius: BorderRadius.circular(AppRadius.full),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            )).toList(),
-          ),
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              child: Container(
-                color: c.surface.withValues(alpha: 0.87),
+      child: maxVol <= 0
+          ? SizedBox(
+              height: 120,
+              child: Center(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 34, height: 34,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: c.surfaceHigh,
-                      ),
-                      child: Icon(Icons.lock_outline_rounded,
-                          size: 17, color: c.textTertiary),
+                    Icon(Icons.bar_chart_rounded,
+                      size: 28, color: c.textTertiary.withValues(alpha: 0.5)),
+                    const SizedBox(height: 10),
+                    Text(
+                      'No data yet',
+                      style: AppTypography.titleS(c.textPrimary).copyWith(
+                        fontSize: 13, fontWeight: FontWeight.w600),
                     ),
-                    const SizedBox(height: 6),
-                    Text('Advanced Analytics',
-                      style: AppTypography.titleM(c.textPrimary)
-                          .copyWith(fontSize: 14, letterSpacing: -0.1)),
-                    const SizedBox(height: 3),
-                    Text('Unlock with VELT Pro',
-                      style: AppTypography.bodyS(c.textSecondary)
-                          .copyWith(fontSize: 11)),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: onUpgrade,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 6),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: c.accentIron),
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                        ),
-                        child: Text('Upgrade',
-                          style: AppTypography.bodyS(c.accentIron).copyWith(
-                            fontWeight: FontWeight.w600, fontSize: 12)),
-                      ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Log workouts to build your volume trend.',
+                      style: AppTypography.bodyS(c.textTertiary).copyWith(
+                        fontSize: 11),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
               ),
+            )
+          : Column(
+              children: [
+                // Context row
+                Row(
+                  children: [
+                    Text(
+                      'Last 8 ${periodLower}s',
+                      style: AppTypography.caption(c.textTertiary)
+                          .copyWith(fontSize: 10),
+                    ),
+                    const Spacer(),
+                    if (nonEmpty > 0)
+                      Text(
+                        '$nonEmpty ${nonEmpty == 1 ? periodLower : '${periodLower}s'} with data',
+                        style: AppTypography.caption(c.textSecondary)
+                            .copyWith(fontSize: 10, fontWeight: FontWeight.w600),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 150,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Y-axis labels
+                      SizedBox(
+                        width: 36,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(yLabel(yTop),
+                              style: AppTypography.caption(c.textTertiary)
+                                  .copyWith(fontSize: 9, fontFeatures: [const FontFeature.tabularFigures()])),
+                            Text(yLabel(yMid),
+                              style: AppTypography.caption(c.textTertiary)
+                                  .copyWith(fontSize: 9, fontFeatures: [const FontFeature.tabularFigures()])),
+                            Text('0',
+                              style: AppTypography.caption(c.textTertiary)
+                                  .copyWith(fontSize: 9, fontFeatures: [const FontFeature.tabularFigures()])),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      // Bars with gesture
+                      Expanded(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final chartWidth = constraints.maxWidth;
+                            return GestureDetector(
+                              onTapDown: (d) =>
+                                  _onTouch(d.localPosition.dx, chartWidth),
+                              onPanUpdate: (d) =>
+                                  _onTouch(d.localPosition.dx, chartWidth),
+                              onTapUp: (_) =>
+                                  setState(() => _hoveredIndex = null),
+                              onPanEnd: (_) =>
+                                  setState(() => _hoveredIndex = null),
+                              child: Stack(
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      border: Border(
+                                        left: BorderSide(
+                                          color: c.divider.withValues(
+                                              alpha: 0.5),
+                                          width: 0.5),
+                                        bottom: BorderSide(
+                                          color: c.divider.withValues(
+                                              alpha: 0.5),
+                                          width: 0.5),
+                                      ),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(
+                                        left: 4, bottom: 1),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
+                                        children:
+                                            data.asMap().entries.map((entry) {
+                                          final i = entry.key;
+                                          final d = entry.value;
+                                          final frac =
+                                              d.volume / effectiveMax;
+                                          final isCurrent =
+                                              i == data.length - 1;
+                                          final isHovered =
+                                              i == _hoveredIndex;
+                                          return Expanded(
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 3),
+                                              child: FractionallySizedBox(
+                                                alignment:
+                                                    Alignment.bottomCenter,
+                                                heightFactor:
+                                                    frac.clamp(0.02, 1.0),
+                                                child: AnimatedContainer(
+                                                  duration: const Duration(
+                                                      milliseconds: 500),
+                                                  decoration: BoxDecoration(
+                                                    color: isHovered ||
+                                                            isCurrent
+                                                        ? c.accentIron
+                                                        : c.surfaceHigh,
+                                                    borderRadius:
+                                                        const BorderRadius
+                                                            .vertical(
+                                                      top: Radius.circular(3)),
+                                                    boxShadow: isHovered
+                                                        ? [
+                                                            BoxShadow(
+                                                              color: c.accentIron
+                                                                  .withValues(
+                                                                      alpha:
+                                                                          0.35),
+                                                              blurRadius: 8,
+                                                              spreadRadius: 1,
+                                                            ),
+                                                          ]
+                                                        : null,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ),
+                                  ),
+                                  // Touch tooltip
+                                  if (_hoveredIndex != null &&
+                                      _hoveredIndex! < data.length)
+                                    _VolumeBarTooltip(
+                                      entry: data[_hoveredIndex!],
+                                      index: _hoveredIndex!,
+                                      totalBars: data.length,
+                                      chartWidth: chartWidth,
+                                      c: c,
+                                    ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // X-axis labels
+                Padding(
+                  padding: const EdgeInsets.only(left: 40),
+                  child: Row(
+                    children: data.asMap().entries.map((entry) {
+                      final i = entry.key;
+                      final isCurrent = i == data.length - 1;
+                      final isHovered = i == _hoveredIndex;
+                      return Expanded(
+                        child: Text(
+                          data[i].label,
+                          textAlign: TextAlign.center,
+                          style: AppTypography.caption(
+                            isHovered || isCurrent
+                                ? c.accentIron
+                                : c.textTertiary,
+                          ).copyWith(
+                            fontSize: 10,
+                            fontWeight: isHovered || isCurrent
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+class _VolumeBarTooltip extends StatelessWidget {
+  const _VolumeBarTooltip({
+    required this.entry,
+    required this.index,
+    required this.totalBars,
+    required this.chartWidth,
+    required this.c,
+  });
+  final ({String label, double volume}) entry;
+  final int index;
+  final int totalBars;
+  final double chartWidth;
+  final AppColors c;
+
+  @override
+  Widget build(BuildContext context) {
+    const tipW = 80.0;
+    final barW = chartWidth / totalBars;
+    final centerX = index * barW + barW / 2;
+    final left = (centerX - tipW / 2).clamp(0.0, chartWidth - tipW);
+    final volStr = entry.volume >= 1000
+        ? '${(entry.volume / 1000).toStringAsFixed(1)}k'
+        : entry.volume.toStringAsFixed(0);
+
+    return Positioned(
+      left: left,
+      top: 0,
+      child: Container(
+        width: tipW,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: c.surfaceHigh,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(color: c.accentIron.withValues(alpha: 0.5)),
+          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 6)],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$volStr ${WeightUnit.suffix}',
+              style: AppTypography.caption(c.accentIron).copyWith(
+                fontSize: 11, fontWeight: FontWeight.w700,
+                fontFeatures: [const FontFeature.tabularFigures()]),
+              textAlign: TextAlign.center,
+            ),
+            Text(
+              entry.label,
+              style: AppTypography.caption(c.textTertiary)
+                  .copyWith(fontSize: 10),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Bodyweight Card with history chart ────────────────────────
+class _BodyweightCard extends StatefulWidget {
+  const _BodyweightCard({required this.c, required this.onLog});
+  final AppColors c;
+  final VoidCallback onLog;
+
+  @override
+  State<_BodyweightCard> createState() => _BodyweightCardState();
+}
+
+class _BodyweightCardState extends State<_BodyweightCard> {
+  String _bwPeriod = '1M';
+
+  List<({int dateMs, double kg})> _loadHistory() {
+    final raw = PrefsService.bodyweightHistory;
+    if (raw == null) return [];
+    try {
+      final list = jsonDecode(raw) as List;
+      final parsed = list.map((e) {
+        final m = e as Map;
+        return (
+          dateMs: m['date'] as int,
+          kg: (m['kg'] as num).toDouble(),
+        );
+      }).toList();
+      parsed.sort((a, b) => a.dateMs.compareTo(b.dateMs));
+      return parsed;
+    } catch (_) {
+      return [];
+    }
+  }
+
+  List<({int dateMs, double kg})> _applyPeriod(
+      List<({int dateMs, double kg})> all) {
+    if (_bwPeriod == 'All') return all;
+    final cutoff = DateTime.now().subtract(switch (_bwPeriod) {
+      '3M' => const Duration(days: 90),
+      '1Y' => const Duration(days: 365),
+      _    => const Duration(days: 30), // 1M default
+    }).millisecondsSinceEpoch;
+    return all.where((e) => e.dateMs >= cutoff).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.c;
+    final onLog = widget.onLog;
+    final allHistory = _loadHistory();
+    final history = _applyPeriod(allHistory);
+    final bwKg = PrefsService.bodyweightKg;
+
+    if (allHistory.isEmpty && bwKg == null) {
+      return GestureDetector(
+        onTap: onLog,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
+          decoration: BoxDecoration(
+            color: c.surfaceElevated,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: c.divider.withValues(alpha: 0.5)),
+          ),
+          child: Column(
+            children: [
+              Icon(Icons.monitor_weight_outlined,
+                size: 36, color: c.textTertiary.withValues(alpha: 0.6)),
+              const SizedBox(height: 10),
+              Text(
+                'Track your bodyweight',
+                style: AppTypography.titleS(c.textPrimary).copyWith(
+                  fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Log today\'s weight to start your trend.',
+                style: AppTypography.bodyS(c.textTertiary).copyWith(
+                  fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20, vertical: 9),
+                decoration: BoxDecoration(
+                  color: c.accentIron.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  border: Border.all(
+                    color: c.accentIron.withValues(alpha: 0.35), width: 0.5),
+                ),
+                child: Text(
+                  '+ Log today',
+                  style: AppTypography.bodyS(c.accentIron).copyWith(
+                    fontWeight: FontWeight.w600, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final effectiveHistory = history.isNotEmpty ? history : <({int dateMs, double kg})>[];
+    final displayKg = bwKg ?? (effectiveHistory.isNotEmpty
+        ? effectiveHistory.last.kg
+        : 0.0);
+
+    final displayVal = WeightUnit.isLbs
+        ? (displayKg * 2.20462).toStringAsFixed(1)
+        : displayKg.toStringAsFixed(1);
+
+    String? trendText;
+    Color trendColor = c.textSecondary;
+    if (effectiveHistory.length >= 2) {
+      final delta = effectiveHistory.last.kg - effectiveHistory.first.kg;
+      final sign = delta >= 0 ? '+' : '';
+      final deltaDisplay = WeightUnit.isLbs
+          ? (delta * 2.20462).toStringAsFixed(1)
+          : delta.toStringAsFixed(1);
+      final periodLabel = switch (_bwPeriod) {
+        '3M' => 'last 3 months',
+        '1Y' => 'last year',
+        'All' => 'all time',
+        _    => 'last 30 days',
+      };
+      trendText = '$sign$deltaDisplay ${WeightUnit.suffix} $periodLabel';
+      final goal = PrefsService.fitnessGoal;
+      final gainIsGood = goal != 'Lose Fat';
+      trendColor = (delta >= 0) == gainIsGood ? c.successLime : c.errorRose;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: c.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: c.divider.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top: weight display
+          RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: displayVal,
+                  style: AppTypography.displayL(c.textPrimary).copyWith(
+                    fontSize: 34,
+                    letterSpacing: -1.5,
+                    height: 1,
+                    fontFeatures: [const FontFeature.tabularFigures()],
+                  ),
+                ),
+                TextSpan(
+                  text: ' ${WeightUnit.suffix}',
+                  style: AppTypography.bodyM(c.textTertiary).copyWith(
+                    fontSize: 13, fontWeight: FontWeight.w400),
+                ),
+              ],
             ),
           ),
+          if (trendText != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              trendText,
+              style: AppTypography.bodyS(trendColor).copyWith(
+                fontSize: 11, fontWeight: FontWeight.w600),
+            ),
+          ],
+          if (allHistory.length >= 2) ...[
+            const SizedBox(height: 12),
+            // Period selector
+            Row(
+              children: ['1M', '3M', '1Y', 'All'].map((p) {
+                final active = _bwPeriod == p;
+                return GestureDetector(
+                  onTap: () => setState(() => _bwPeriod = p),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    margin: const EdgeInsets.only(right: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: active
+                          ? c.accentIron
+                          : c.surfaceHigh,
+                      borderRadius:
+                          BorderRadius.circular(AppRadius.full),
+                    ),
+                    child: Text(
+                      p,
+                      style: AppTypography.caption(
+                        active ? Colors.white : c.textTertiary,
+                      ).copyWith(
+                        fontSize: 11,
+                        fontWeight: active
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 10),
+            if (effectiveHistory.length >= 2)
+              SizedBox(
+                height: 70,
+                width: double.infinity,
+                child: CustomPaint(
+                  painter: _BwLinePainter(
+                    data: effectiveHistory,
+                    color: c.accentIron,
+                    bgColor: c.surfaceElevated,
+                  ),
+                ),
+              )
+            else
+              SizedBox(
+                height: 40,
+                child: Center(
+                  child: Text(
+                    'No entries in this period.',
+                    style: AppTypography.bodyS(c.textTertiary).copyWith(
+                      fontSize: 12),
+                  ),
+                ),
+              ),
+          ],
         ],
       ),
     );
   }
 }
 
-// ── PR Row ─────────────────────────────────────────────────────
-class _PRRow extends StatelessWidget {
-  const _PRRow({
-    required this.exercise, required this.value,
-    required this.date, required this.c,
+class _BwLinePainter extends CustomPainter {
+  _BwLinePainter({
+    required this.data,
+    required this.color,
+    required this.bgColor,
   });
-  final String exercise;
-  final String value;
-  final String date;
+  final List<({int dateMs, double kg})> data;
+  final Color color;
+  final Color bgColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (data.length < 2) return;
+
+    final xs = data.map((d) => d.dateMs.toDouble()).toList();
+    final ys = data.map((d) => d.kg).toList();
+    final xMin = xs.first;
+    final xMax = xs.last;
+    final yMin = ys.reduce(math.min) - 0.3;
+    final yMax = ys.reduce(math.max) + 0.3;
+    final xRange = xMax == xMin ? 1.0 : xMax - xMin;
+    final yRange = yMax == yMin ? 1.0 : yMax - yMin;
+
+    List<Offset> pts = List.generate(data.length, (i) {
+      final x = ((xs[i] - xMin) / xRange) * size.width;
+      final y = size.height - ((ys[i] - yMin) / yRange) * size.height;
+      return Offset(x, y);
+    });
+
+    // Area fill
+    final areaPath = Path()..moveTo(pts.first.dx, pts.first.dy);
+    for (final p in pts.skip(1)) {
+      areaPath.lineTo(p.dx, p.dy);
+    }
+    areaPath
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+
+    canvas.drawPath(
+      areaPath,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            color.withValues(alpha: 0.25),
+            color.withValues(alpha: 0.0),
+          ],
+        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height)),
+    );
+
+    // Line
+    final linePath = Path()..moveTo(pts.first.dx, pts.first.dy);
+    for (final p in pts.skip(1)) {
+      linePath.lineTo(p.dx, p.dy);
+    }
+    canvas.drawPath(
+      linePath,
+      Paint()
+        ..color = color
+        ..strokeWidth = 2
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+
+    // Dots
+    for (final p in pts) {
+      canvas.drawCircle(p, 2, Paint()..color = color);
+    }
+
+    // Last point: larger dot with white ring
+    final last = pts.last;
+    canvas.drawCircle(last, 5, Paint()..color = bgColor);
+    canvas.drawCircle(last, 3.5, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(_BwLinePainter old) =>
+      old.data != data || old.color != color;
+}
+
+// ── PR list as single card with dividers ──────────────────────
+class _PRListCard extends StatelessWidget {
+  const _PRListCard({required this.prs, required this.c});
+  final Map<String, ({double weight, String dateLabel})> prs;
   final AppColors c;
 
   @override
   Widget build(BuildContext context) {
+    final entries = prs.entries.take(8).toList();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: c.surfaceElevated,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: c.divider.withValues(alpha: 0.5)),
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 34, height: 34,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: c.accentIron.withValues(alpha: 0.1),
-            ),
-            child: Center(
-              child: Icon(
-                Icons.emoji_events_outlined,
-                size: 16,
-                color: c.accentIron,
+      child: Column(
+        children: entries.asMap().entries.map((e) {
+          final i = e.key;
+          final entry = e.value;
+          final weightStr = WeightUnit.format(entry.value.weight);
+          return Column(
+            children: [
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) =>
+                    PRDetailScreen(exerciseName: entry.key))),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32, height: 32,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: c.accentIron.withValues(alpha: 0.15),
+                      ),
+                      child: Center(
+                        child: Icon(Icons.emoji_events_outlined,
+                          size: 14, color: c.accentIron),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            entry.key,
+                            style: AppTypography.titleM(c.textPrimary)
+                                .copyWith(
+                                  fontSize: 14,
+                                  letterSpacing: -0.05,
+                                  fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            entry.value.dateLabel,
+                            style: AppTypography.bodyS(c.textTertiary)
+                                .copyWith(fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      weightStr,
+                      style: AppTypography.displayM(c.accentIron).copyWith(
+                        fontSize: 16,
+                        letterSpacing: -0.3,
+                        fontWeight: FontWeight.w700,
+                        fontFeatures: [const FontFeature.tabularFigures()],
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.chevron_right_rounded,
+                        size: 16, color: c.textTertiary),
+                  ],
+                ),
               ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
+              ),
+              if (i < entries.length - 1)
+                Divider(
+                  height: 0.5,
+                  thickness: 0.5,
+                  color: c.divider.withValues(alpha: 0.6),
+                  indent: 14,
+                  endIndent: 14,
+                ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// ── Muscle Breakdown horizontal bar chart ─────────────────────
+class _MuscleBreakdownCard extends StatelessWidget {
+  const _MuscleBreakdownCard({required this.history, required this.c});
+  final List<CompletedWorkout> history;
+  final AppColors c;
+
+  Map<String, double> _compute() {
+    final map = <String, double>{};
+    for (final w in history) {
+      for (final ex in w.exercises) {
+        final vol = ex.sets
+            .where((s) => s.isDone && s.weight > 0)
+            .fold(0.0, (a, s) => a + s.weight * s.reps);
+        if (vol > 0 && ex.muscle.isNotEmpty) {
+          map[ex.muscle] = (map[ex.muscle] ?? 0) + vol;
+        }
+      }
+    }
+    return map;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final muscleVol = _compute();
+    if (muscleVol.isEmpty) {
+      return _EmptySection(
+        title: 'No data yet',
+        label: 'Muscle balance appears after completed workouts.',
+        icon: Icons.fitness_center_outlined,
+        c: c,
+      );
+    }
+
+    final sorted = muscleVol.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final maxVol = sorted.first.value;
+    final totalVol = muscleVol.values.fold(0.0, (a, b) => a + b);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
+      decoration: BoxDecoration(
+        color: c.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: c.divider.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        children: sorted.take(8).toList().asMap().entries.map((e) {
+          final i = e.key;
+          final entry = e.value;
+          final frac = maxVol > 0 ? entry.value / maxVol : 0.0;
+          final pct = totalVol > 0
+              ? (entry.value / totalVol * 100).round()
+              : 0;
+          final isLast = i == sorted.take(8).length - 1;
+          return Padding(
+            padding: EdgeInsets.only(bottom: isLast ? 8 : 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  exercise,
-                  style: AppTypography.titleM(c.textPrimary).copyWith(
-                    fontSize: 14, letterSpacing: -0.1),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        entry.key,
+                        style: AppTypography.bodyS(c.textPrimary).copyWith(
+                          fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    Text(
+                      '$pct%',
+                      style: AppTypography.caption(
+                        i == 0 ? c.accentIron : c.textSecondary,
+                      ).copyWith(
+                        fontSize: 11, fontWeight: FontWeight.w700,
+                        fontFeatures: [const FontFeature.tabularFigures()]),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  date,
-                  style: AppTypography.bodyS(c.textTertiary).copyWith(
-                    fontSize: 11),
+                const SizedBox(height: 5),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: frac.clamp(0.0, 1.0),
+                    minHeight: 6,
+                    backgroundColor: c.surfaceHigh,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      i == 0
+                          ? c.accentIron
+                          : c.accentIron.withValues(alpha: 0.5)),
+                  ),
                 ),
               ],
             ),
-          ),
-          Text(
-            value,
-            style: AppTypography.displayM(c.accentIron).copyWith(
-              fontSize: 16,
-              letterSpacing: -0.2,
-              fontFeatures: [const FontFeature.tabularFigures()],
-            ),
-          ),
-        ],
+          );
+        }).toList(),
       ),
     );
   }
@@ -579,104 +1185,51 @@ class _PRRow extends StatelessWidget {
 
 // ── Empty section ──────────────────────────────────────────────
 class _EmptySection extends StatelessWidget {
-  const _EmptySection({required this.label, required this.c});
+  const _EmptySection({
+    required this.label,
+    required this.c,
+    this.title,
+    this.icon,
+  });
+  final String? title;
   final String label;
   final AppColors c;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
       decoration: BoxDecoration(
         color: c.surfaceElevated,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: c.divider.withValues(alpha: 0.5)),
       ),
       child: Center(
-        child: Text(
-          label,
-          style: AppTypography.bodyS(c.textTertiary).copyWith(
-            fontSize: 12, fontStyle: FontStyle.italic),
-          textAlign: TextAlign.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 32, color: c.textTertiary.withValues(alpha: 0.6)),
+              const SizedBox(height: 10),
+            ],
+            if (title != null) ...[
+              Text(
+                title!,
+                style: AppTypography.titleS(c.textPrimary).copyWith(
+                  fontSize: 13, fontWeight: FontWeight.w600),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+            ],
+            Text(
+              label,
+              style: AppTypography.bodyS(c.textTertiary).copyWith(fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
-    );
-  }
-}
-
-// ── Bodyweight Card ────────────────────────────────────────────
-class _BodyweightCard extends StatelessWidget {
-  const _BodyweightCard({required this.c, required this.onLog});
-  final AppColors c;
-  final VoidCallback onLog;
-
-  @override
-  Widget build(BuildContext context) {
-    final bwKg = PrefsService.bodyweightKg;
-    final hasData = bwKg != null;
-
-    final displayVal = hasData
-        ? (WeightUnit.isLbs
-            ? (bwKg * 2.20462).toStringAsFixed(1)
-            : bwKg.toStringAsFixed(1))
-        : '—';
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: c.surfaceElevated,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: c.divider.withValues(alpha: 0.5)),
-      ),
-      child: hasData
-          ? Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: displayVal,
-                        style: AppTypography.displayL(c.textPrimary).copyWith(
-                          fontSize: 34, letterSpacing: -1,
-                          fontFeatures: [const FontFeature.tabularFigures()],
-                        ),
-                      ),
-                      TextSpan(
-                        text: ' ${WeightUnit.suffix}',
-                        style: AppTypography.bodyM(c.textSecondary).copyWith(
-                          fontSize: 14, fontWeight: FontWeight.w400),
-                      ),
-                    ],
-                  ),
-                ),
-                const Spacer(),
-                GestureDetector(
-                  onTap: onLog,
-                  child: Text(
-                    '+ Log today',
-                    style: AppTypography.bodyS(c.accentIron).copyWith(
-                      fontSize: 12, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-            )
-          : GestureDetector(
-              onTap: onLog,
-              child: Column(
-                children: [
-                  Icon(Icons.monitor_weight_outlined,
-                    size: 32, color: c.textTertiary),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Tap to log your bodyweight',
-                    style: AppTypography.bodyS(c.textTertiary).copyWith(
-                      fontSize: 12, fontStyle: FontStyle.italic),
-                  ),
-                ],
-              ),
-            ),
     );
   }
 }
@@ -717,12 +1270,10 @@ class _BwLogSheetState extends State<_BwLogSheet> {
     final raw = double.tryParse(_ctrl.text.trim());
     if (raw == null || raw <= 0) return;
     final kg = WeightUnit.isLbs ? raw / 2.20462 : raw;
-
     setState(() => _saving = true);
     await PrefsService.setBodyweightKg(kg);
     await _appendHistory(kg);
     HapticFeedback.mediumImpact();
-
     if (mounted) {
       Navigator.pop(context);
       widget.onSaved();
@@ -733,8 +1284,8 @@ class _BwLogSheetState extends State<_BwLogSheet> {
     final raw = PrefsService.bodyweightHistory;
     List<dynamic> list = raw != null ? jsonDecode(raw) as List : [];
     final today = DateTime.now();
-    final todayMs = DateTime(today.year, today.month, today.day)
-        .millisecondsSinceEpoch;
+    final todayMs =
+        DateTime(today.year, today.month, today.day).millisecondsSinceEpoch;
     list.removeWhere((e) => (e as Map)['date'] == todayMs);
     list.add({'date': todayMs, 'kg': kg});
     if (list.length > 90) list = list.sublist(list.length - 90);
@@ -746,12 +1297,11 @@ class _BwLogSheetState extends State<_BwLogSheet> {
     final c = widget.c;
     final suffix = WeightUnit.suffix;
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         decoration: BoxDecoration(
           color: c.surfaceElevated,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
         child: Column(
@@ -772,7 +1322,7 @@ class _BwLogSheetState extends State<_BwLogSheet> {
               style: AppTypography.titleM(c.textPrimary).copyWith(
                 fontSize: 18, letterSpacing: -0.3)),
             const SizedBox(height: 4),
-            Text('Today\'s entry will update your trend chart',
+            Text("Today's entry will update your trend chart",
               style: AppTypography.bodyS(c.textTertiary).copyWith(fontSize: 12)),
             const SizedBox(height: 20),
             TextField(
@@ -789,15 +1339,15 @@ class _BwLogSheetState extends State<_BwLogSheet> {
                 suffixStyle: AppTypography.bodyM(c.textSecondary).copyWith(
                   fontSize: 16),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   borderSide: BorderSide(color: c.divider),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   borderSide: BorderSide(color: c.accentIron, width: 1.5),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   borderSide: BorderSide(color: c.divider),
                 ),
                 filled: true,
@@ -816,7 +1366,7 @@ class _BwLogSheetState extends State<_BwLogSheet> {
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(AppRadius.sm)),
                 ),
                 child: _saving
                     ? const SizedBox(

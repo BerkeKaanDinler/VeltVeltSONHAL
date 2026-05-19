@@ -3,9 +3,13 @@ import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
+import '../services/prefs_service.dart';
 import '../services/workout_history_store.dart';
 import '../utils/weight_unit.dart';
-import 'active_workout_screen.dart' show CompletedWorkout, WorkoutExercise;
+import '../widgets/set_row.dart' show SetType;
+import '../widgets/shared_widgets.dart';
+import '../models/workout.dart' show CompletedWorkout, WorkoutExercise;
+import 'exercise_detail_screen.dart';
 
 class WorkoutHistoryScreen extends StatelessWidget {
   const WorkoutHistoryScreen({super.key});
@@ -347,122 +351,439 @@ class _WorkoutHistoryCard extends StatelessWidget {
   }
 }
 
+// ── PR computation helper ─────────────────────────────────────
+List<({String exercise, double weight, int reps})> _prsFor(CompletedWorkout w) {
+  final history = WorkoutHistoryStore.history.value;
+  final prevBests = <String, double>{};
+  for (final h in history) {
+    if (!h.completedAt.isBefore(w.completedAt)) continue;
+    for (final ex in h.exercises) {
+      for (final s in ex.sets) {
+        if (s.isDone && s.weight > (prevBests[ex.name] ?? 0)) {
+          prevBests[ex.name] = s.weight;
+        }
+      }
+    }
+  }
+  final result = <({String exercise, double weight, int reps})>[];
+  for (final ex in w.exercises) {
+    double best = 0; int bestR = 0;
+    for (final s in ex.sets) {
+      if (s.isDone && s.weight > best) { best = s.weight; bestR = s.reps; }
+    }
+    if (best > 0 && best > (prevBests[ex.name] ?? 0)) {
+      result.add((exercise: ex.name, weight: best, reps: bestR));
+    }
+  }
+  return result;
+}
+
 // ── Workout Detail Screen ─────────────────────────────────────
-class WorkoutDetailScreen extends StatelessWidget {
+class WorkoutDetailScreen extends StatefulWidget {
   const WorkoutDetailScreen({super.key, required this.workout});
   final CompletedWorkout workout;
 
   @override
+  State<WorkoutDetailScreen> createState() => _WorkoutDetailScreenState();
+}
+
+class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
+  late String _note;
+
+  String get _noteKey =>
+      'session_${widget.workout.completedAt.millisecondsSinceEpoch}';
+
+  @override
+  void initState() {
+    super.initState();
+    _note = PrefsService.getNote(_noteKey) ?? '';
+  }
+
+  Future<void> _editNote(AppColors c) async {
+    final ctrl = TextEditingController(text: _note);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Padding(
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: Container(
+          decoration: BoxDecoration(
+            color: c.surfaceElevated,
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: c.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'SESSION NOTE',
+                style: AppTypography.caption(c.accentIron).copyWith(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.9),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: ctrl,
+                autofocus: true,
+                maxLines: 5,
+                style: AppTypography.bodyS(c.textPrimary)
+                    .copyWith(fontSize: 14, height: 1.5),
+                decoration: InputDecoration(
+                  hintText: 'How did the session feel?',
+                  hintStyle:
+                      AppTypography.bodyS(c.textTertiary).copyWith(fontSize: 14),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    borderSide: BorderSide(color: c.divider),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    borderSide:
+                        BorderSide(color: c.divider.withValues(alpha: 0.6)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    borderSide: BorderSide(color: c.accentIron),
+                  ),
+                  contentPadding: const EdgeInsets.all(12),
+                  filled: true,
+                  fillColor: c.surface,
+                ),
+              ),
+              const SizedBox(height: 14),
+              PrimaryButton(
+                label: 'Save',
+                onPressed: () async {
+                  final text = ctrl.text.trim();
+                  if (text.isEmpty) {
+                    await PrefsService.clearNote(_noteKey);
+                  } else {
+                    await PrefsService.setNote(_noteKey, text);
+                  }
+                  setState(() => _note = text);
+                  if (mounted) Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final c = Theme.of(context).extension<AppColors>()!;
-    final w = workout;
+    final w = widget.workout;
     final d = w.completedAt;
-    final dateStr =
-        '${_fullDay(d.weekday)}, ${_fullMonth(d.month)} ${d.day}, ${d.year}';
+    final dateStr = '${_fullDay(d.weekday)}, ${_fullMonth(d.month)} ${d.day}';
     final timeStr =
         '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    final prs = _prsFor(w);
+    final prCount = prs.length;
 
     return Scaffold(
       backgroundColor: c.surface,
       body: SafeArea(
         bottom: false,
-        child: CustomScrollView(
-          slivers: [
-            // Header
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md, AppSpacing.lg,
-                  AppSpacing.md, AppSpacing.md),
-                child: Row(
-                  children: [
+        child: Column(
+          children: [
+            // ── Sticky header ──────────────────────────
+            Container(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screenH,
+                  AppSpacing.sm,
+                  AppSpacing.screenH,
+                  AppSpacing.md),
+              decoration: BoxDecoration(
+                color: c.surface,
+                border: Border(
+                    bottom: BorderSide(
+                        color: c.divider.withValues(alpha: 0.6), width: 0.5)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 36, height: 36,
-                        decoration: BoxDecoration(
-                          color: c.surfaceElevated,
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                        ),
-                        child: Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          size: 16, color: c.textSecondary),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 6, 16, 6),
+                        child: Icon(Icons.arrow_back_ios_new_rounded,
+                            size: 16, color: c.textSecondary),
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            w.routineName,
-                            style: AppTypography.titleM(c.textPrimary).copyWith(
-                              fontSize: 20, letterSpacing: -0.4),
-                          ),
-                          Text(
-                            '$dateStr · $timeStr',
-                            style: AppTypography.caption(c.textTertiary).copyWith(
-                              fontSize: 11),
-                          ),
-                        ],
-                      ),
+                    const Spacer(),
+                    GhostButton(
+                      label: 'Share',
+                      onPressed: () {},
+                      height: 32,
                     ),
-                  ],
-                ),
+                  ]),
+                  const SizedBox(height: 6),
+                  Text(
+                    'COMPLETED WORKOUT',
+                    style: AppTypography.caption(c.accentIron).copyWith(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.9),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    w.routineName,
+                    style: AppTypography.displayL(c.textPrimary)
+                        .copyWith(fontSize: 26, letterSpacing: -0.8, height: 1.1),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$dateStr · $timeStr',
+                    style: AppTypography.bodyS(c.textTertiary)
+                        .copyWith(fontSize: 12),
+                  ),
+                ],
               ),
             ),
 
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md, 0, AppSpacing.md, 80),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  // Stats strip
-                  Row(
-                    children: [
-                      _DetailStat(
-                        label: 'Duration',
-                        value: w.durationLabel,
-                        icon: Icons.timer_outlined,
-                        c: c,
-                      ),
+            // ── Scrollable body ────────────────────────
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.screenH, AppSpacing.lg, AppSpacing.screenH, 80),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 2×2 stats grid
+                    Row(children: [
+                      Expanded(
+                          child: _DetailStatTile(
+                              label: 'Duration',
+                              value: w.durationLabel,
+                              c: c)),
                       const SizedBox(width: 8),
-                      _DetailStat(
-                        label: 'Volume',
-                        value: w.volumeLabel,
-                        icon: Icons.fitness_center_outlined,
-                        c: c,
-                      ),
+                      Expanded(
+                          child: _DetailStatTile(
+                              label: 'Volume', value: w.volumeLabel, c: c)),
+                    ]),
+                    const SizedBox(height: 8),
+                    Row(children: [
+                      Expanded(
+                          child: _DetailStatTile(
+                              label: 'Sets',
+                              value: '${w.doneSets}',
+                              c: c)),
                       const SizedBox(width: 8),
-                      _DetailStat(
-                        label: 'Sets',
-                        value: '${w.doneSets}',
-                        icon: Icons.check_circle_outline_rounded,
-                        c: c,
-                      ),
-                      const SizedBox(width: 8),
-                      _DetailStat(
-                        label: 'Exercises',
-                        value: '${w.exercises.length}',
-                        icon: Icons.format_list_bulleted_rounded,
-                        c: c,
+                      Expanded(
+                          child: _DetailStatTile(
+                              label: 'PRs',
+                              value: '$prCount',
+                              c: c,
+                              accent: prCount > 0)),
+                    ]),
+
+                    // Avg rest pill
+                    if (w.avgRestSecs > 0) ...[
+                      const SizedBox(height: 12),
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: c.surfaceHigh,
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.full),
+                            border: Border.all(
+                                color: c.divider.withValues(alpha: 0.5)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.timer_outlined,
+                                  size: 12, color: c.textSecondary),
+                              const SizedBox(width: 5),
+                              Text.rich(
+                                TextSpan(
+                                  style: AppTypography.bodyS(c.textSecondary)
+                                      .copyWith(fontSize: 12),
+                                  children: [
+                                    const TextSpan(text: 'Avg rest: '),
+                                    TextSpan(
+                                      text: '${w.avgRestSecs}s',
+                                      style: TextStyle(
+                                          color: c.textPrimary,
+                                          fontWeight: FontWeight.w700),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 24),
 
-                  // Exercise breakdown
-                  Text(
-                    'EXERCISES',
-                    style: AppTypography.caption(c.textTertiary).copyWith(
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.9,
-                      fontSize: 10,
+                    // PR callout section
+                    if (prs.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      Text(
+                        '${prs.length} NEW PERSONAL RECORD${prs.length > 1 ? 'S' : ''}',
+                        style: AppTypography.caption(c.textTertiary).copyWith(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8),
+                      ),
+                      const SizedBox(height: 8),
+                      ...prs.map((pr) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: c.accentIron.withValues(alpha: 0.08),
+                                border: Border.all(
+                                    color:
+                                        c.accentIron.withValues(alpha: 0.3)),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.md),
+                              ),
+                              child: Row(children: [
+                                Container(
+                                  width: 30,
+                                  height: 30,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: c.accentIron.withValues(alpha: 0.18),
+                                  ),
+                                  child: Icon(Icons.emoji_events_rounded,
+                                      size: 14, color: c.accentIron),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                    child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(pr.exercise,
+                                        style: AppTypography.bodyS(c.textPrimary)
+                                            .copyWith(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700)),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${WeightUnit.format(pr.weight)} × ${pr.reps}',
+                                      style: AppTypography.bodyS(c.accentIron)
+                                          .copyWith(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              fontFeatures: [
+                                            const FontFeature.tabularFigures()
+                                          ]),
+                                    ),
+                                  ],
+                                )),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 7, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: c.accentIron,
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.full),
+                                  ),
+                                  child: Text('NEW PR',
+                                      style: AppTypography.caption(Colors.white)
+                                          .copyWith(
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w800)),
+                                ),
+                              ]),
+                            ),
+                          )),
+                    ],
+
+                    // Session note
+                    const SizedBox(height: 24),
+                    Row(children: [
+                      Expanded(
+                        child: Text(
+                          'SESSION NOTE',
+                          style: AppTypography.caption(c.textTertiary).copyWith(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => _editNote(c),
+                        child: Text(
+                          _note.isEmpty ? 'Add' : 'Edit',
+                          style: AppTypography.bodyS(c.accentIron).copyWith(
+                              fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () => _editNote(c),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: c.surfaceElevated,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          border: Border.all(
+                              color: c.divider.withValues(alpha: 0.5)),
+                        ),
+                        child: _note.isEmpty
+                            ? Text(
+                                'Tap to add a session note…',
+                                style: AppTypography.bodyS(c.textTertiary)
+                                    .copyWith(fontSize: 13, height: 1.5),
+                              )
+                            : Text(
+                                '"$_note"',
+                                style: AppTypography.bodyS(c.textSecondary)
+                                    .copyWith(
+                                        fontSize: 13,
+                                        height: 1.55,
+                                        fontStyle: FontStyle.italic),
+                              ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  ...w.exercises.map((ex) => _ExerciseDetailCard(ex: ex, c: c)),
-                ]),
+
+                    // Exercises
+                    const SizedBox(height: 24),
+                    Text(
+                      'EXERCISES',
+                      style: AppTypography.caption(c.textTertiary).copyWith(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8),
+                    ),
+                    const SizedBox(height: 10),
+                    ...w.exercises.map((ex) {
+                      final prWeight = prs
+                              .where((p) => p.exercise == ex.name)
+                              .map((p) => p.weight)
+                              .firstOrNull ??
+                          0.0;
+                      return _ExerciseDetailCard(
+                          ex: ex, c: c, prWeight: prWeight);
+                    }),
+                  ],
+                ),
               ),
             ),
           ],
@@ -472,70 +793,103 @@ class WorkoutDetailScreen extends StatelessWidget {
   }
 
   static String _fullDay(int d) {
-    const n = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+    const n = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
+    ];
     return n[(d - 1).clamp(0, 6)];
   }
 
   static String _fullMonth(int m) {
-    const n = ['January','February','March','April','May','June',
-               'July','August','September','October','November','December'];
+    const n = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
+    ];
     return n[(m - 1).clamp(0, 11)];
   }
 }
 
-class _DetailStat extends StatelessWidget {
-  const _DetailStat({
+// ── 2×2 stat tile (design-matching) ──────────────────────────
+class _DetailStatTile extends StatelessWidget {
+  const _DetailStatTile({
     required this.label,
     required this.value,
-    required this.icon,
     required this.c,
+    this.accent = false,
   });
   final String label;
   final String value;
-  final IconData icon;
   final AppColors c;
+  final bool accent;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: c.surfaceElevated,
-          borderRadius: BorderRadius.circular(AppRadius.md),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: accent
+            ? c.accentIron.withValues(alpha: 0.08)
+            : c.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: accent ? c.accentIron : c.divider.withValues(alpha: 0.5),
+          width: accent ? 1.0 : 0.5,
         ),
-        child: Column(
-          children: [
-            Icon(icon, size: 16, color: c.accentIron),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: AppTypography.titleS(c.textPrimary).copyWith(
-                fontSize: 14,
-                fontFeatures: [const FontFeature.tabularFigures()],
-              ),
-            ),
-            Text(
-              label,
-              style: AppTypography.caption(c.textTertiary).copyWith(
-                fontSize: 9, letterSpacing: 0.3),
-            ),
-          ],
-        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(value,
+            style: AppTypography.displayM(
+              accent ? c.accentIron : c.textPrimary,
+            ).copyWith(
+              fontSize: 24,
+              letterSpacing: -0.5,
+              height: 1,
+              fontFeatures: [const FontFeature.tabularFigures()],
+            )),
+          const SizedBox(height: 6),
+          Text(label.toUpperCase(),
+            style: AppTypography.caption(c.textTertiary).copyWith(
+              fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.7)),
+        ],
       ),
     );
   }
 }
 
+// ── Exercise card with type-badge | w×r | trophy/check ───────
 class _ExerciseDetailCard extends StatelessWidget {
-  const _ExerciseDetailCard({required this.ex, required this.c});
+  const _ExerciseDetailCard({
+    required this.ex,
+    required this.c,
+    this.prWeight = 0.0,
+  });
   final WorkoutExercise ex;
   final AppColors c;
+  final double prWeight;
 
   @override
   Widget build(BuildContext context) {
     final doneSets = ex.sets.where((s) => s.isDone).toList();
     if (doneSets.isEmpty) return const SizedBox.shrink();
+
+    int normalIdx = 0;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -549,147 +903,150 @@ class _ExerciseDetailCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Exercise header
-            Container(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: c.divider.withValues(alpha: 0.4))),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      ex.name,
-                      style: AppTypography.titleS(c.textPrimary).copyWith(
-                        fontSize: 14, letterSpacing: -0.1),
-                    ),
-                  ),
-                  Text(
-                    '${ex.muscle} · ${ex.equipment}',
-                    style: AppTypography.caption(c.textTertiary).copyWith(
-                      fontSize: 10),
-                  ),
-                ],
-              ),
-            ),
-            // Sets
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
-              child: Column(
-                children: [
-                  // Column headers
-                  Row(
+            // Header → tappable → ExerciseDetailScreen
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) =>
+                    ExerciseDetailScreen(exerciseName: ex.name)));
+              },
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+                decoration: BoxDecoration(
+                  border: Border(bottom: BorderSide(
+                    color: c.divider.withValues(alpha: 0.4))),
+                ),
+                child: Row(children: [
+                  Expanded(child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(
-                        width: 30,
-                        child: Text(
-                          'SET',
-                          style: AppTypography.caption(c.textTertiary).copyWith(
-                            fontSize: 9, letterSpacing: 0.5,
-                            fontWeight: FontWeight.w700),
-                          textAlign: TextAlign.center,
+                      Text(ex.name,
+                        style: AppTypography.titleS(c.textPrimary).copyWith(
+                          fontSize: 14, fontWeight: FontWeight.w700,
+                          letterSpacing: -0.1)),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: c.surfaceHigh,
+                          borderRadius: BorderRadius.circular(AppRadius.full),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'WEIGHT',
-                          style: AppTypography.caption(c.textTertiary).copyWith(
-                            fontSize: 9, letterSpacing: 0.5,
-                            fontWeight: FontWeight.w700),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          'REPS',
-                          style: AppTypography.caption(c.textTertiary).copyWith(
-                            fontSize: 9, letterSpacing: 0.5,
-                            fontWeight: FontWeight.w700),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          'VOLUME',
-                          style: AppTypography.caption(c.textTertiary).copyWith(
-                            fontSize: 9, letterSpacing: 0.5,
-                            fontWeight: FontWeight.w700),
-                          textAlign: TextAlign.center,
-                        ),
+                        child: Text(ex.muscle,
+                          style: AppTypography.caption(c.textTertiary)
+                              .copyWith(fontSize: 10)),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 4),
-                  ...List.generate(doneSets.length, (i) {
-                    final s = doneSets[i];
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Row(
-                        children: [
-                          SizedBox(
-                            width: 30,
-                            child: Text(
-                              '${i + 1}',
-                              textAlign: TextAlign.center,
-                              style: AppTypography.bodyS(c.textTertiary).copyWith(
-                                fontSize: 12),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              WeightUnit.format(s.weight),
-                              textAlign: TextAlign.center,
-                              style: AppTypography.titleS(c.textPrimary).copyWith(
-                                fontSize: 13,
-                                fontFeatures: [const FontFeature.tabularFigures()]),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              '${s.reps}',
-                              textAlign: TextAlign.center,
-                              style: AppTypography.bodyS(c.textSecondary).copyWith(
-                                fontSize: 13,
-                                fontFeatures: [const FontFeature.tabularFigures()]),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              WeightUnit.format(s.weight * s.reps),
-                              textAlign: TextAlign.center,
-                              style: AppTypography.bodyS(c.accentIron).copyWith(
-                                fontSize: 12,
-                                fontFeatures: [const FontFeature.tabularFigures()]),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                  // Notes if present
-                  if (ex.notes.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: c.surfaceHigh,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: Text(
-                        ex.notes,
-                        style: AppTypography.bodyS(c.textTertiary).copyWith(
-                          fontSize: 11, fontStyle: FontStyle.italic,
-                          height: 1.4),
-                      ),
-                    ),
-                  ],
-                ],
+                  )),
+                  Icon(Icons.chevron_right_rounded,
+                    size: 14, color: c.accentIron.withValues(alpha: 0.5)),
+                ]),
               ),
             ),
+
+            // Set rows: 32px badge | w×r | trophy/check
+            ...doneSets.asMap().entries.map((e) {
+              final i = e.key;
+              final s = e.value;
+              final isPR = prWeight > 0 && s.weight >= prWeight;
+
+              // Badge
+              Widget badge;
+              switch (s.type) {
+                case SetType.warmup:
+                  badge = Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: c.accentIron.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                    ),
+                    child: Text('W', textAlign: TextAlign.center,
+                      style: AppTypography.caption(c.accentIron).copyWith(
+                        fontSize: 9, fontWeight: FontWeight.w700)),
+                  );
+                case SetType.drop:
+                  badge = Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: c.textTertiary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                    ),
+                    child: Text('D', textAlign: TextAlign.center,
+                      style: AppTypography.caption(c.textTertiary).copyWith(
+                        fontSize: 9, fontWeight: FontWeight.w700)),
+                  );
+                case SetType.failure:
+                  badge = Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: c.textTertiary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                    ),
+                    child: Text('F', textAlign: TextAlign.center,
+                      style: AppTypography.caption(c.textTertiary).copyWith(
+                        fontSize: 9, fontWeight: FontWeight.w700)),
+                  );
+                case SetType.normal:
+                  normalIdx++;
+                  badge = Text('$normalIdx', textAlign: TextAlign.center,
+                    style: AppTypography.bodyS(c.textSecondary).copyWith(
+                      fontSize: 13, fontWeight: FontWeight.w700));
+              }
+
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 9),
+                decoration: BoxDecoration(
+                  color: isPR
+                      ? c.accentIron.withValues(alpha: 0.06)
+                      : Colors.transparent,
+                  border: i < doneSets.length - 1
+                      ? Border(bottom: BorderSide(
+                          color: c.divider.withValues(alpha: 0.4),
+                          width: 0.5))
+                      : null,
+                ),
+                child: Row(children: [
+                  SizedBox(width: 32,
+                    child: Center(child: badge)),
+                  Expanded(
+                    child: Text(
+                      s.weight > 0
+                          ? '${WeightUnit.format(s.weight)} × ${s.reps}'
+                          : 'BW × ${s.reps}',
+                      style: AppTypography.bodyS(c.textPrimary).copyWith(
+                        fontSize: 13, fontWeight: FontWeight.w500,
+                        fontFeatures: [const FontFeature.tabularFigures()]),
+                    ),
+                  ),
+                  isPR
+                      ? Icon(Icons.emoji_events_rounded,
+                          size: 14, color: c.accentIron)
+                      : Icon(Icons.check_rounded,
+                          size: 14, color: c.successLime),
+                ]),
+              );
+            }),
+
+            // Exercise notes if present
+            if (ex.notes.isNotEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+                decoration: BoxDecoration(
+                  color: c.surfaceHigh,
+                  border: Border(top: BorderSide(
+                    color: c.divider.withValues(alpha: 0.4))),
+                ),
+                child: Text('"${ex.notes}"',
+                  style: AppTypography.bodyS(c.textTertiary).copyWith(
+                    fontSize: 11, fontStyle: FontStyle.italic, height: 1.4)),
+              ),
           ],
         ),
       ),

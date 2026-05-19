@@ -21,6 +21,8 @@ class PrefsService {
   static Future<void> saveActiveWorkout(String jsonStr) =>
       _p.setString('active_workout', jsonStr);
   static Future<void> clearActiveWorkout() => _p.remove('active_workout');
+  static Future<void> clearLastWorkout() => _p.remove('last_workout');
+  static Future<void> clearBodyweightHistory() => _p.remove('bodyweight_history');
 
   static String? get lastWorkout => _p.getString('last_workout');
   static Future<void> saveLastWorkout(String jsonStr) =>
@@ -68,4 +70,10 @@ class PrefsService {
   static String? get bodyweightHistory => _p.getString('bodyweight_history');
   static Future<void> saveBodyweightHistory(String jsonStr) =>
       _p.setString('bodyweight_history', jsonStr);
+
+  // Generic per-key notes (exercise form notes, PR notes, etc.)
+  static String? getNote(String key) => _p.getString('note_$key');
+  static Future<void> setNote(String key, String value) =>
+      _p.setString('note_$key', value);
+  static Future<void> clearNote(String key) => _p.remove('note_$key');
 }

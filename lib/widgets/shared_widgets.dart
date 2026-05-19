@@ -57,8 +57,8 @@ class _PrimaryButtonState extends State<PrimaryButton> {
               borderRadius: BorderRadius.circular(AppRadius.md),
               boxShadow: widget.disabled ? null : [
                 BoxShadow(
-                  color: c.accentIron.withValues(alpha: 0.25),
-                  blurRadius: 20,
+                  color: c.accentIron.withValues(alpha: 0.15),
+                  blurRadius: 12,
                   offset: const Offset(0, 0),
                 ),
               ],
@@ -154,6 +154,60 @@ class TextVeltButton extends StatelessWidget {
   }
 }
 
+// ── SkeletonBox ── pulsing shimmer placeholder ─────────────
+class SkeletonBox extends StatefulWidget {
+  const SkeletonBox({
+    super.key,
+    this.width = double.infinity,
+    required this.height,
+    this.radius = AppRadius.sm,
+  });
+  final double width;
+  final double height;
+  final double radius;
+
+  @override
+  State<SkeletonBox> createState() => _SkeletonBoxState();
+}
+
+class _SkeletonBoxState extends State<SkeletonBox>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 950),
+    )..repeat(reverse: true);
+    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).extension<AppColors>()!;
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) => Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(
+          color: Color.lerp(c.surfaceElevated, c.surfaceHigh, _anim.value),
+          borderRadius: BorderRadius.circular(widget.radius),
+        ),
+      ),
+    );
+  }
+}
+
 // ── SectionHeader ──────────────────────────────────────────
 class SectionHeader extends StatelessWidget {
   const SectionHeader({
@@ -179,16 +233,16 @@ class SectionHeader extends StatelessWidget {
         children: [
           Text(
             label.toUpperCase(),
-            style: AppTypography.sectionHeader(c.textSecondary),
+            style: AppTypography.sectionHeader(c.textTertiary),
           ),
           if (action != null)
             GestureDetector(
               onTap: onAction,
               child: Text(
-                '$action →',
+                action!,
                 style: AppTypography.bodyS(c.accentIron).copyWith(
-                  fontWeight: FontWeight.w600, fontSize: 12,
-                ),
+                  fontWeight: FontWeight.w600, fontSize: 11,
+                  letterSpacing: 0.02),
               ),
             ),
         ],
@@ -264,7 +318,7 @@ class _RoutineCardState extends State<RoutineCard> {
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right, color: c.textTertiary, size: 18),
+                  Icon(Icons.chevron_right_rounded, color: c.textTertiary, size: 18),
                 ],
               ),
             ),
@@ -546,7 +600,10 @@ class VeltFilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = Theme.of(context).extension<AppColors>()!;
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),

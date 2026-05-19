@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'services/health_service.dart';
 import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_spacing.dart';
@@ -13,22 +14,17 @@ import 'screens/train_screen.dart';
 import 'screens/active_workout_screen.dart';
 import 'screens/progress_screen.dart';
 import 'screens/nutrition_screen.dart';
-import 'screens/profile_screen.dart';
+import 'screens/settings_screen.dart';
 
 // ── Global theme notifier ──────────────────────────────────
 final ValueNotifier<String> veltThemeKey = ValueNotifier(PrefsService.theme);
 
 ThemeData _themeForKey(String key) {
   return switch (key) {
-    'warmPaper'     => AppTheme.warmPaper,
-    'midnightSteel' => AppTheme.midnightSteel,
-    'forestIron'    => AppTheme.forestIron,
-    'bloodOrange'   => AppTheme.bloodOrange,
-    'espresso'      => AppTheme.espresso,
-    'arctic'        => AppTheme.arctic,
-    'obsidian'      => AppTheme.obsidian,
-    'military'      => AppTheme.military,
-    _               => AppTheme.darkIron,
+    'slate'    => AppTheme.slate,
+    'roseGold' => AppTheme.roseGold,
+    'emerald'  => AppTheme.emerald,
+    _          => AppTheme.darkIron,
   };
 }
 
@@ -38,16 +34,29 @@ class VeltRoot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'VELT',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.darkIron,
+      home: const _ThemeListener(),
+    );
+  }
+}
+
+// Keeps MaterialApp stable; only AnimatedTheme rebuilds on theme change.
+class _ThemeListener extends StatelessWidget {
+  const _ThemeListener();
+
+  @override
+  Widget build(BuildContext context) {
     return ValueListenableBuilder<String>(
       valueListenable: veltThemeKey,
-      builder: (_, key, __) {
-        return MaterialApp(
-          title: 'VELT',
-          debugShowCheckedModeBanner: false,
-          theme: _themeForKey(key),
-          home: const VeltApp(),
-        );
-      },
+      builder: (_, key, __) => AnimatedTheme(
+        data: _themeForKey(key),
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeInOut,
+        child: const VeltApp(),
+      ),
     );
   }
 }
@@ -146,6 +155,8 @@ class _VeltAppState extends State<VeltApp> {
     }
     PrefsService.saveLastWorkout(jsonEncode(w.toJson()));
     WorkoutHistoryStore.add(w);
+    // Write to Apple Health — non-blocking, failures are silent
+    HealthService.logWorkout(w);
     // Mark the matching routine as done so Today's Plan updates correctly
     final match = RoutineStore.routines.value
         .where((r) => r.name == w.routineName)
@@ -157,6 +168,15 @@ class _VeltAppState extends State<VeltApp> {
       _lastCompletedWorkout = w;
       _pendingExercises = null;
       _newPRs = newPRs;
+    });
+  }
+
+  void _discardWorkout() {
+    PrefsService.clearActiveWorkout();
+    setState(() {
+      _activeWorkoutName = null;
+      _pendingExercises = null;
+      _restoredElapsedSecs = 0;
     });
   }
 
@@ -190,6 +210,7 @@ class _VeltAppState extends State<VeltApp> {
         exercises: _pendingExercises,
         initialElapsedSecs: _restoredElapsedSecs,
         onFinish: _finishWorkout,
+        onDiscard: _discardWorkout,
       );
     }
 
@@ -202,7 +223,7 @@ class _VeltAppState extends State<VeltApp> {
       TrainScreen(onStartWorkout: _startWorkout),
       const NutritionScreen(),
       const ProgressScreen(),
-      ProfileScreen(
+      SettingsScreen(
         onThemeChange: (key) {
           veltThemeKey.value = key;
           PrefsService.setTheme(key);
@@ -253,28 +274,33 @@ class _VeltBottomNav extends StatelessWidget {
             final tab = e.value;
             final active = i == activeIndex;
             return Expanded(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  onTap(i);
-                },
-                child: SizedBox(
-                  height: AppTouchTarget.tabBar,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildIcon(tab.icon, active, c),
-                      if (active)
-                        Container(
-                          margin: const EdgeInsets.only(top: 5),
-                          width: 20, height: 2,
-                          decoration: BoxDecoration(
-                            color: c.accentIron,
-                            borderRadius: BorderRadius.circular(AppRadius.full),
+              child: Semantics(
+                label: tab.label,
+                button: true,
+                selected: active,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    onTap(i);
+                  },
+                  child: SizedBox(
+                    height: AppTouchTarget.tabBar,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildIcon(tab.icon, active, c),
+                        if (active)
+                          Container(
+                            margin: const EdgeInsets.only(top: 5),
+                            width: 20, height: 2,
+                            decoration: BoxDecoration(
+                              color: c.accentIron,
+                              borderRadius: BorderRadius.circular(AppRadius.full),
+                            ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

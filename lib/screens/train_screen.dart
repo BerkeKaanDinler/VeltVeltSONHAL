@@ -8,8 +8,9 @@ import '../models/routine.dart';
 import '../services/routine_store.dart';
 import '../services/prefs_service.dart';
 import '../data/program_data.dart';
-import 'active_workout_screen.dart' show WorkoutExercise, routineExercises;
+import '../models/workout.dart' show WorkoutExercise;
 import 'routine_editor_screen.dart';
+import '../utils/training_helpers.dart';
 
 // ── Program catalogue ─────────────────────────────────────────
 class _Program {
@@ -122,6 +123,132 @@ const _programs = [
         'Weekly progression on training maxes. Very demanding — requires good recovery.',
     bestFor: 'Experienced lifters who want maximum strength gains and can handle 5 hard sessions/week.',
   ),
+  _Program(
+    id: 'beg-full',
+    name: 'Beginner Full Body',
+    tagline: 'The safest way to start lifting',
+    level: 'Beginner',
+    daysPerWeek: '3 days/week',
+    goal: 'Get Strong',
+    goalColor: Color(0xFF22C55E),
+    muscleGroups: ['Full Body', 'Compound', 'Squat', 'Bench', 'Deadlift'],
+    description:
+        'Two alternating full-body workouts, each containing a squat, a press, a pull, and a hinge. '
+        'Trains every muscle three times per week with low enough volume to recover between sessions.',
+    bestFor: 'True beginners who want to build a foundation of strength and technique.',
+  ),
+  _Program(
+    id: 'ppl-3d',
+    name: 'PPL 3-Day',
+    tagline: 'Push Pull Legs — compact 3-day version',
+    level: 'Intermediate',
+    daysPerWeek: '3 days/week',
+    goal: 'Build Muscle',
+    goalColor: Color(0xFFD97706),
+    muscleGroups: ['Chest', 'Back', 'Shoulders', 'Legs', 'Arms'],
+    description:
+        'A condensed PPL where each muscle group is trained once per week with higher volume per session. '
+        'Good for those who want the PPL split but can only train 3 days.',
+    bestFor: 'Intermediates with busy schedules who prefer full sessions over training frequency.',
+  ),
+  _Program(
+    id: 'fb-hyper',
+    name: 'Full Body Hypertrophy',
+    tagline: 'High-frequency full body for muscle growth',
+    level: 'Intermediate',
+    daysPerWeek: '3 days/week',
+    goal: 'Build Muscle',
+    goalColor: Color(0xFFD97706),
+    muscleGroups: ['Full Body', 'Compound', 'Isolation'],
+    description:
+        'Trains every muscle three times per week with moderate weight and higher rep ranges. '
+        'Each of the three sessions has a different emphasis: squat, hip hinge, and deadlift patterns.',
+    bestFor: 'Intermediates who want maximum muscle growth with 3 training days.',
+  ),
+  _Program(
+    id: 'strength-3d',
+    name: 'Strength 3-Day',
+    tagline: 'Pure strength, minimum fluff',
+    level: 'Intermediate',
+    daysPerWeek: '3 days/week',
+    goal: 'Get Strong',
+    goalColor: Color(0xFF22C55E),
+    muscleGroups: ['Squat', 'Bench', 'Deadlift', 'OHP', 'Row'],
+    description:
+        'Two alternating workouts focused on the big 5 compound lifts with low reps and high intensity. '
+        'No isolation work — just the movements that build the most strength.',
+    bestFor: 'Lifters who want to increase their squat, bench, deadlift, and overhead press.',
+  ),
+  _Program(
+    id: 'powerbuilding',
+    name: 'Powerbuilding',
+    tagline: 'Strength and size — best of both worlds',
+    level: 'Intermediate',
+    daysPerWeek: '4 days/week',
+    goal: 'Strength + Size',
+    goalColor: Color(0xFF6366F1),
+    muscleGroups: ['Squat', 'Bench', 'Deadlift', 'OHP', 'Full Body'],
+    description:
+        'Each session starts with a powerlifting-style strength block (low reps, high intensity) '
+        'followed by bodybuilding-style accessory volume. The best approach for getting both stronger and bigger.',
+    bestFor: 'Intermediate lifters who want to get strong on the big lifts while building visible muscle.',
+  ),
+  _Program(
+    id: 'chest-tri',
+    name: 'Chest & Triceps Focus',
+    tagline: 'Build a powerful pushing presence',
+    level: 'Intermediate',
+    daysPerWeek: '3 days/week',
+    goal: 'Build Muscle',
+    goalColor: Color(0xFFD97706),
+    muscleGroups: ['Chest', 'Triceps', 'Shoulders'],
+    description:
+        'Three rotating push sessions targeting chest and triceps from multiple angles. '
+        'Combines heavy compound pressing with isolation work for complete development.',
+    bestFor: 'Anyone who wants to prioritize upper body pushing strength and chest size.',
+  ),
+  _Program(
+    id: 'back-bi',
+    name: 'Back & Biceps Focus',
+    tagline: 'Build width, thickness, and arm size',
+    level: 'Intermediate',
+    daysPerWeek: '3 days/week',
+    goal: 'Build Muscle',
+    goalColor: Color(0xFFD97706),
+    muscleGroups: ['Back', 'Biceps', 'Rear Delt'],
+    description:
+        'Three rotating pull sessions targeting back width, back thickness, and biceps. '
+        'Includes deadlifts, rows, pulldowns, and curls for complete posterior chain development.',
+    bestFor: 'Anyone who wants to build a wider, thicker back and bigger arms.',
+  ),
+  _Program(
+    id: 'leg-growth',
+    name: 'Leg Growth Focus',
+    tagline: 'Quad, hamstring, and glute development',
+    level: 'Intermediate',
+    daysPerWeek: '3 days/week',
+    goal: 'Build Muscle',
+    goalColor: Color(0xFFD97706),
+    muscleGroups: ['Quads', 'Hamstrings', 'Glutes', 'Calves'],
+    description:
+        'Three leg sessions with different emphases: quad-dominant, posterior chain, and full leg. '
+        'Combines squats, hinges, hip thrusts, lunges, and isolation work for complete leg development.',
+    bestFor: 'Anyone who wants to build bigger, more defined legs.',
+  ),
+  _Program(
+    id: 'shoulders',
+    name: 'Shoulder Width Focus',
+    tagline: 'Build the width that defines your physique',
+    level: 'Intermediate',
+    daysPerWeek: '3 days/week',
+    goal: 'Build Muscle',
+    goalColor: Color(0xFFD97706),
+    muscleGroups: ['Shoulders', 'Traps', 'Rear Delt'],
+    description:
+        'Three shoulder sessions targeting front, side, and rear deltoids. '
+        'High lateral raise volume for width, balanced with pressing strength and rear delt health.',
+    bestFor: 'Anyone who wants broader shoulders and a more athletic-looking upper body.',
+  ),
 ];
 
 // ── TrainScreen ───────────────────────────────────────────────
@@ -137,49 +264,6 @@ class _TrainScreenState extends State<TrainScreen> {
   String _levelFilter = 'All';
   _Program? _selectedProgram;
 
-  static String _recommendationText(String goal, String experience) {
-    switch (goal) {
-      case 'Strength':
-        if (experience == 'beginner') {
-          return 'Your goal: Strength — Start with StrongLifts 5×5, the fastest way for beginners to get strong';
-        }
-        if (experience == 'advanced') {
-          return 'Your goal: Strength — nSuns 5/3/1 delivers maximum weekly volume for serious strength gains';
-        }
-        return 'Your goal: Strength — 5/3/1 by Wendler is proven long-term progression that works for years';
-      case 'Lose Fat':
-        if (experience == 'beginner') {
-          return 'Your goal: Lose Fat — StrongLifts 5×5 preserves muscle while you cut. Keep the weights moving';
-        }
-        return 'Your goal: Lose Fat — Push Pull Legs or Upper/Lower with shorter rest keeps intensity high';
-      case 'Endurance':
-        return 'Your goal: Endurance — GZCLP with 60s rest builds conditioning alongside strength and size';
-      default: // Build Muscle
-        if (experience == 'beginner') {
-          return 'Your goal: Build Muscle — Upper/Lower Split trains every muscle twice per week, perfect starting point';
-        }
-        if (experience == 'advanced') {
-          return 'Your goal: Build Muscle — Push Pull Legs or GZCLP maximise weekly volume for advanced hypertrophy';
-        }
-        return 'Your goal: Build Muscle — Push Pull Legs is the most proven hypertrophy program, trains each muscle 2×/week';
-    }
-  }
-
-  static bool _programMatchesGoal(String programGoal, String userGoal) {
-    switch (userGoal) {
-      case 'Build Muscle':
-        return programGoal == 'Build Muscle' || programGoal == 'Strength + Size';
-      case 'Strength':
-        return programGoal == 'Get Strong' || programGoal == 'Strength + Size' || programGoal == 'Powerlifting';
-      case 'Lose Fat':
-        return programGoal == 'Build Muscle' || programGoal == 'Strength + Size';
-      case 'Endurance':
-        return programGoal == 'Strength + Size';
-      default:
-        return false;
-    }
-  }
-
   void _openNewRoutine() async {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const RoutineEditorScreen()),
@@ -193,7 +277,7 @@ class _TrainScreenState extends State<TrainScreen> {
       context: context,
       backgroundColor: c.surfaceElevated,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       builder: (_) => SafeArea(
         child: Column(
@@ -240,7 +324,7 @@ class _TrainScreenState extends State<TrainScreen> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.delete_outline, color: c.errorRose),
+              leading: Icon(Icons.delete_outline_rounded, color: c.errorRose),
               title: Text('Delete Routine',
                   style: AppTypography.bodyM(c.errorRose)),
               onTap: () {
@@ -256,37 +340,24 @@ class _TrainScreenState extends State<TrainScreen> {
   }
 
   void _startRoutine(Routine r) {
-    widget.onStartWorkout(
-      r.name,
-      r.exercises.isNotEmpty ? r.exercises : routineExercises(r.id),
-    );
+    widget.onStartWorkout(r.name, r.exercises.isNotEmpty ? r.exercises : null);
   }
 
   void _confirmDelete(Routine r) {
-    final c = Theme.of(context).extension<AppColors>()!;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: c.surfaceElevated,
-        title: Text('Delete "${r.name}"?',
-            style: AppTypography.titleM(c.textPrimary)),
-        content: Text('This cannot be undone.',
-            style: AppTypography.bodyS(c.textSecondary)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: AppTypography.bodyM(c.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              RoutineStore.delete(r.id);
-            },
-            child: Text('Delete', style: AppTypography.bodyM(c.errorRose)),
-          ),
-        ],
-      ),
-    );
+    RoutineStore.delete(r.id);
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(
+        content: Text('"${r.name}" deleted'),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => RoutineStore.add(r),
+        ),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm)),
+      ));
   }
 
   @override
@@ -319,10 +390,21 @@ class _TrainScreenState extends State<TrainScreen> {
                 padding: const EdgeInsets.fromLTRB(
                   AppSpacing.md, AppSpacing.xl,
                   AppSpacing.md, AppSpacing.md),
-                child: Text(
-                  'Train',
-                  style: AppTypography.displayL(c.textPrimary).copyWith(
-                    fontSize: 34, letterSpacing: -1),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Train',
+                      style: AppTypography.displayL(c.textPrimary).copyWith(
+                        fontSize: 34, letterSpacing: -1, height: 1),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Your routines & programs',
+                      style: AppTypography.bodyS(c.textTertiary).copyWith(
+                        fontSize: 13, height: 1),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -339,10 +421,10 @@ class _TrainScreenState extends State<TrainScreen> {
                       const SectionHeader(label: 'My Routines'),
                       const Spacer(),
                       GhostButton(
-                        label: '+ New',
+                        label: '+ New Routine',
                         onPressed: _openNewRoutine,
-                        height: 30,
-                        fontSize: 11,
+                        height: 32,
+                        fontSize: 12,
                       ),
                     ],
                   ),
@@ -363,7 +445,7 @@ class _TrainScreenState extends State<TrainScreen> {
                           final r = routines[i];
                           return Padding(
                             padding: EdgeInsets.only(
-                              bottom: i < routines.length - 1 ? 10 : 0),
+                              bottom: i < routines.length - 1 ? 12 : 0),
                             child: _RoutineCard(
                               routine: r,
                               onTap: () => _startRoutine(r),
@@ -411,7 +493,7 @@ class _TrainScreenState extends State<TrainScreen> {
 
                   // Recommended banner
                   _RecommendedBanner(
-                    text: _recommendationText(fitnessGoal, experienceLevel),
+                    text: TrainingHelpers.recommendationText(fitnessGoal, experienceLevel),
                     c: c,
                   ),
                   const SizedBox(height: 12),
@@ -439,8 +521,8 @@ class _TrainScreenState extends State<TrainScreen> {
                   // Program cards — goal-matching first
                   ...() {
                     final sorted = [...filtered]..sort((a, b) {
-                      final aM = _programMatchesGoal(a.goal, fitnessGoal) ? 0 : 1;
-                      final bM = _programMatchesGoal(b.goal, fitnessGoal) ? 0 : 1;
+                      final aM = TrainingHelpers.programMatchesGoal(a.goal, fitnessGoal) ? 0 : 1;
+                      final bM = TrainingHelpers.programMatchesGoal(b.goal, fitnessGoal) ? 0 : 1;
                       return aM.compareTo(bM);
                     });
                     return List.generate(sorted.length, (i) {
@@ -451,7 +533,7 @@ class _TrainScreenState extends State<TrainScreen> {
                         child: _ProgramCard(
                           program: p,
                           onTap: () => setState(() => _selectedProgram = p),
-                          matchesGoal: _programMatchesGoal(p.goal, fitnessGoal),
+                          matchesGoal: TrainingHelpers.programMatchesGoal(p.goal, fitnessGoal),
                           c: c,
                         ),
                       );
@@ -490,13 +572,13 @@ class _QuickStartBar extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 34, height: 34,
+              width: 38, height: 38,
               decoration: BoxDecoration(
-                color: c.accentIron.withValues(alpha: 0.1),
+                color: c.accentIron.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: Icon(Icons.bolt_rounded,
-                color: c.accentIron, size: 18),
+                color: c.accentIron, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -506,10 +588,11 @@ class _QuickStartBar extends StatelessWidget {
                   Text(
                     'Empty Workout',
                     style: AppTypography.titleS(c.textPrimary).copyWith(
-                      fontSize: 14, letterSpacing: -0.1),
+                      fontSize: 14, fontWeight: FontWeight.w700),
                   ),
+                  const SizedBox(height: 2),
                   Text(
-                    'Start blank and add exercises as you go',
+                    'Quick session — no routine needed',
                     style: AppTypography.bodyS(c.textTertiary).copyWith(
                       fontSize: 11),
                   ),
@@ -535,7 +618,7 @@ class _RoutineCard extends StatelessWidget {
   });
   final Routine routine;
   final VoidCallback onTap;
-  final VoidCallback onLongPress; // keep for backward compat
+  final VoidCallback onLongPress;
   final AppColors c;
 
   String get _estimatedTime {
@@ -549,140 +632,178 @@ class _RoutineCard extends StatelessWidget {
     return groups.take(3).toList();
   }
 
+  bool get _doneToday {
+    if (routine.lastDone == null) return false;
+    final now = DateTime.now();
+    final d = routine.lastDone!;
+    return d.year == now.year && d.month == now.month && d.day == now.day;
+  }
+
   @override
   Widget build(BuildContext context) {
     final muscles = _muscleGroups;
     final exCount = routine.exercises.length;
+    final doneToday = _doneToday;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: c.surfaceElevated,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border(
-          left: BorderSide(color: routine.color, width: 3),
-          top: BorderSide(color: c.divider.withValues(alpha: 0.4)),
-          right: BorderSide(color: c.divider.withValues(alpha: 0.4)),
-          bottom: BorderSide(color: c.divider.withValues(alpha: 0.4)),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    routine.name,
-                    style: AppTypography.titleM(c.textPrimary).copyWith(
-                      fontSize: 15, letterSpacing: -0.2),
-                  ),
-                  const SizedBox(height: 5),
-                  // Muscle chips
-                  if (muscles.isNotEmpty)
-                    Wrap(
-                      spacing: 4,
-                      children: muscles.map((m) => Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: routine.color.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(AppRadius.xs),
-                        ),
-                        child: Text(
-                          m,
-                          style: AppTypography.caption(
-                            routine.color.withValues(alpha: 0.9),
-                          ).copyWith(fontSize: 10, fontWeight: FontWeight.w600),
-                        ),
-                      )).toList(),
-                    ),
-                  const SizedBox(height: 6),
-                  // Meta row
-                  Row(
-                    children: [
-                      Icon(Icons.fitness_center_rounded,
-                        size: 10, color: c.textTertiary),
-                      const SizedBox(width: 3),
-                      Text(
-                        '$exCount ex',
-                        style: AppTypography.caption(c.textTertiary).copyWith(
-                          fontSize: 10),
-                      ),
-                      Text(
-                        '  ·  ',
-                        style: AppTypography.caption(c.textTertiary).copyWith(
-                          fontSize: 10),
-                      ),
-                      Icon(Icons.timer_outlined,
-                        size: 10, color: c.textTertiary),
-                      const SizedBox(width: 3),
-                      Text(
-                        _estimatedTime,
-                        style: AppTypography.caption(c.textTertiary).copyWith(
-                          fontSize: 10),
-                      ),
-                      if (routine.lastDone != null) ...[
-                        Text(
-                          '  ·  ',
-                          style: AppTypography.caption(c.textTertiary).copyWith(
-                            fontSize: 10),
-                        ),
-                        Text(
-                          routine.lastDoneLabel,
-                          style: AppTypography.caption(
-                            c.accentIron.withValues(alpha: 0.8),
-                          ).copyWith(fontSize: 10),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Actions
-            Column(
-              mainAxisSize: MainAxisSize.min,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Opacity(
+        opacity: doneToday ? 0.70 : 1.0,
+        child: Container(
+          decoration: BoxDecoration(
+            color: c.surfaceElevated,
+            border: Border.all(color: c.divider.withValues(alpha: 0.5), width: 0.5),
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ··· menu
-                GestureDetector(
-                  onTap: onLongPress,
+                // Left color bar — thicker accent
+                Container(width: 4, color: routine.color),
+                // Content
+                Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(Icons.more_horiz_rounded,
-                      size: 18, color: c.textTertiary),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                // Start button
-                GestureDetector(
-                  onTap: () {
-                    HapticFeedback.mediumImpact();
-                    onTap();
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: routine.color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      border: Border.all(
-                        color: routine.color.withValues(alpha: 0.25)),
-                    ),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Icon(Icons.play_arrow_rounded,
-                          size: 14, color: routine.color),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Start',
-                          style: AppTypography.bodyS(routine.color).copyWith(
-                            fontSize: 12, fontWeight: FontWeight.w700),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                routine.name,
+                                style: AppTypography.titleM(c.textPrimary).copyWith(
+                                  fontSize: 15, letterSpacing: -0.1),
+                              ),
+                              const SizedBox(height: 7),
+                              if (muscles.isNotEmpty)
+                                Wrap(
+                                  spacing: 5,
+                                  runSpacing: 4,
+                                  children: muscles.map((m) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: routine.color.withValues(alpha: 0.13),
+                                      borderRadius: BorderRadius.circular(AppRadius.full),
+                                    ),
+                                    child: Text(
+                                      m,
+                                      style: AppTypography.caption(routine.color).copyWith(
+                                        fontSize: 10.5, fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.02),
+                                    ),
+                                  )).toList(),
+                                ),
+                              const SizedBox(height: 9),
+                              Row(
+                                children: [
+                                  Text(
+                                    '$exCount ex · $_estimatedTime',
+                                    style: AppTypography.caption(c.textTertiary).copyWith(
+                                      fontSize: 10, letterSpacing: 0.01),
+                                  ),
+                                  if (doneToday) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: c.successLime.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(AppRadius.full),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.check_rounded, size: 9, color: c.successLime),
+                                          const SizedBox(width: 3),
+                                          Text('Done today', style: AppTypography.caption(c.successLime).copyWith(
+                                            fontSize: 9.5, fontWeight: FontWeight.w600)),
+                                        ],
+                                      ),
+                                    ),
+                                  ] else if (routine.lastDone != null) ...[
+                                    Text(
+                                      ' · Done ${routine.lastDoneLabel}',
+                                      style: AppTypography.caption(c.textTertiary).copyWith(
+                                        fontSize: 10, letterSpacing: 0.01),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            GestureDetector(
+                              onTap: onLongPress,
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Icon(Icons.more_horiz_rounded,
+                                  size: 20, color: c.textSecondary),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            GestureDetector(
+                              onTap: () {
+                                HapticFeedback.mediumImpact();
+                                onTap();
+                              },
+                              child: doneToday
+                                  ? Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 11, vertical: 9),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                                        border: Border.all(
+                                          color: routine.color.withValues(alpha: 0.55),
+                                          width: 1.2,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.replay_rounded,
+                                            size: 11, color: routine.color.withValues(alpha: 0.85)),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Again',
+                                            style: AppTypography.caption(
+                                              routine.color.withValues(alpha: 0.85),
+                                            ).copyWith(
+                                              fontSize: 12, fontWeight: FontWeight.w700),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 13, vertical: 9),
+                                      decoration: BoxDecoration(
+                                        color: routine.color,
+                                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.play_arrow_rounded,
+                                            size: 12, color: Colors.white),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Start',
+                                            style: AppTypography.caption(Colors.white).copyWith(
+                                              fontSize: 12, fontWeight: FontWeight.w700,
+                                              letterSpacing: 0.02),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -690,7 +811,7 @@ class _RoutineCard extends StatelessWidget {
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -768,22 +889,42 @@ class _RecommendedBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: c.accentIron.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(color: c.accentIron.withValues(alpha: 0.2)),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: c.accentIron.withValues(alpha: 0.3)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.lightbulb_outline_rounded,
-              size: 14, color: c.accentIron),
-          const SizedBox(width: 8),
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(
+              color: c.accentIron.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Icon(Icons.lightbulb_outline_rounded,
+                size: 16, color: c.accentIron),
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              text,
-              style: AppTypography.bodyS(c.textSecondary).copyWith(
-                fontSize: 11, height: 1.4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'RECOMMENDED FOR YOU',
+                  style: AppTypography.caption(c.accentIron).copyWith(
+                    fontSize: 12, fontWeight: FontWeight.w700,
+                    letterSpacing: 0.02),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  text,
+                  style: AppTypography.bodyS(c.textPrimary).copyWith(
+                    fontSize: 13, height: 1.5),
+                ),
+              ],
             ),
           ),
         ],
@@ -810,7 +951,7 @@ class _ProgramCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: c.surfaceElevated,
           borderRadius: BorderRadius.circular(AppRadius.md),
@@ -818,7 +959,7 @@ class _ProgramCard extends StatelessWidget {
             color: matchesGoal
                 ? c.accentIron.withValues(alpha: 0.5)
                 : c.divider.withValues(alpha: 0.5),
-            width: matchesGoal ? 1.5 : 1,
+            width: matchesGoal ? 1.5 : 0.5,
           ),
         ),
         child: Column(
@@ -885,26 +1026,18 @@ class _ProgramCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 if (matchesGoal)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: c.accentIron.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(AppRadius.full),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.star_rounded,
-                          size: 10, color: c.accentIron),
-                        const SizedBox(width: 3),
-                        Text(
-                          'Your goal',
-                          style: AppTypography.caption(c.accentIron).copyWith(
-                            fontSize: 9, fontWeight: FontWeight.w700),
-                        ),
-                      ],
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.star_rounded,
+                        size: 10, color: c.accentIron),
+                      const SizedBox(width: 3),
+                      Text(
+                        'Your goal',
+                        style: AppTypography.caption(c.accentIron).copyWith(
+                          fontSize: 9, fontWeight: FontWeight.w700),
+                      ),
+                    ],
                   )
                 else
                   Text(
@@ -1458,6 +1591,160 @@ const _programStaticData = <String, _ProgramStaticData>{
       ('OHP (secondary) × 8 sets', '55–90% ladder'),
       ('Dips', '3 × 10'),
       ('Tricep Pushdown', '3 × 12'),
+    ],
+  ),
+  'beg-full': _ProgramStaticData(
+    schedule: [
+      ('Mon', 'Full Body A'),
+      ('Tue', 'Rest'),
+      ('Wed', 'Full Body B'),
+      ('Thu', 'Rest'),
+      ('Fri', 'Full Body A'),
+      ('Sat', 'Rest'),
+      ('Sun', 'Rest'),
+    ],
+    sampleDayName: 'Full Body A',
+    sampleExercises: [
+      ('Squat', '3 × 5'),
+      ('Bench Press', '3 × 5'),
+      ('Barbell Row', '3 × 5'),
+      ('Romanian Deadlift', '2 × 8'),
+      ('Plank', '3 × 30 s'),
+    ],
+  ),
+  'ppl-3d': _ProgramStaticData(
+    schedule: [
+      ('Mon', 'Push — Chest, Shoulders, Triceps'),
+      ('Tue', 'Rest'),
+      ('Wed', 'Pull — Back, Biceps'),
+      ('Thu', 'Rest'),
+      ('Fri', 'Legs — Quads, Hamstrings, Glutes'),
+      ('Sat', 'Rest'),
+      ('Sun', 'Rest'),
+    ],
+    sampleDayName: 'Push Day',
+    sampleExercises: [
+      ('Bench Press', '4 × 8'),
+      ('Incline DB Press', '3 × 10'),
+      ('Lateral Raise', '3 × 15'),
+      ('Overhead Press', '3 × 8'),
+      ('Tricep Pushdown', '3 × 12'),
+    ],
+  ),
+  'fb-hyper': _ProgramStaticData(
+    schedule: [
+      ('Mon', 'Full Body A — Squat focus'),
+      ('Tue', 'Rest'),
+      ('Wed', 'Full Body B — Hip hinge focus'),
+      ('Thu', 'Rest'),
+      ('Fri', 'Full Body C — Deadlift focus'),
+      ('Sat', 'Rest'),
+      ('Sun', 'Rest'),
+    ],
+    sampleDayName: 'Full Body A',
+    sampleExercises: [
+      ('Squat', '4 × 8'),
+      ('Bench Press', '4 × 8'),
+      ('Lat Pulldown', '3 × 10'),
+      ('Romanian Deadlift', '3 × 10'),
+      ('Lateral Raise', '3 × 15'),
+    ],
+  ),
+  'strength-3d': _ProgramStaticData(
+    schedule: [
+      ('Mon', 'Workout A'),
+      ('Tue', 'Rest'),
+      ('Wed', 'Workout B'),
+      ('Thu', 'Rest'),
+      ('Fri', 'Workout A'),
+      ('Sat', 'Rest'),
+      ('Sun', 'Rest'),
+    ],
+    sampleDayName: 'Workout A',
+    sampleExercises: [
+      ('Squat', '4 × 5'),
+      ('Bench Press', '4 × 5'),
+      ('Barbell Row', '4 × 5'),
+      ('Overhead Press', '3 × 5'),
+    ],
+  ),
+  'powerbuilding': _ProgramStaticData(
+    schedule: [
+      ('Mon', 'Bench — strength + push accessories'),
+      ('Tue', 'Squat — legs and quads'),
+      ('Wed', 'Rest'),
+      ('Thu', 'Deadlift — pull + back accessories'),
+      ('Fri', 'OHP — shoulders and arms'),
+      ('Sat', 'Rest'),
+      ('Sun', 'Rest'),
+    ],
+    sampleDayName: 'Bench Day',
+    sampleExercises: [
+      ('Bench Press', '4 × 5 — strength'),
+      ('Bench Press', '3 × 8 — volume'),
+      ('Incline DB Press', '3 × 10'),
+      ('Overhead Press', '3 × 8'),
+      ('Tricep Pushdown', '3 × 12'),
+    ],
+  ),
+  'chest-tri': _ProgramStaticData(
+    schedule: [
+      ('Mon', 'Chest & Triceps A'),
+      ('Wed', 'Chest & Triceps B'),
+      ('Fri', 'Chest & Triceps C'),
+    ],
+    sampleDayName: 'Session A',
+    sampleExercises: [
+      ('Bench Press', '4 × 6'),
+      ('Incline Bench Press', '3 × 8'),
+      ('Cable Fly', '3 × 12'),
+      ('Close-Grip Bench Press', '3 × 8'),
+      ('Tricep Pushdown', '3 × 12'),
+    ],
+  ),
+  'back-bi': _ProgramStaticData(
+    schedule: [
+      ('Mon', 'Back & Biceps A'),
+      ('Wed', 'Back & Biceps B'),
+      ('Fri', 'Back & Biceps C'),
+    ],
+    sampleDayName: 'Session A',
+    sampleExercises: [
+      ('Deadlift', '3 × 5'),
+      ('Barbell Row', '4 × 8'),
+      ('Lat Pulldown', '3 × 10'),
+      ('Barbell Curl', '3 × 10'),
+      ('Hammer Curl', '3 × 10'),
+    ],
+  ),
+  'leg-growth': _ProgramStaticData(
+    schedule: [
+      ('Mon', 'Legs A — Quad focus'),
+      ('Wed', 'Legs B — Posterior chain'),
+      ('Fri', 'Legs C — Full leg day'),
+    ],
+    sampleDayName: 'Legs A',
+    sampleExercises: [
+      ('Squat', '4 × 6'),
+      ('Leg Press', '3 × 12'),
+      ('Leg Extension', '3 × 15'),
+      ('Romanian Deadlift', '3 × 10'),
+      ('Leg Curl', '3 × 12'),
+    ],
+  ),
+  'shoulders': _ProgramStaticData(
+    schedule: [
+      ('Mon', 'Shoulders A — Pressing + width'),
+      ('Wed', 'Shoulders B — Volume + isolation'),
+      ('Fri', 'Shoulders C — Overhead strength'),
+    ],
+    sampleDayName: 'Session A',
+    sampleExercises: [
+      ('Overhead Press', '4 × 6'),
+      ('DB Shoulder Press', '3 × 10'),
+      ('Lateral Raise', '4 × 15'),
+      ('Face Pull', '3 × 15'),
+      ('Barbell Shrug', '3 × 12'),
     ],
   ),
 };

@@ -9,8 +9,11 @@ import '../models/routine.dart';
 import '../services/routine_store.dart';
 import '../services/workout_history_store.dart';
 import '../utils/weight_unit.dart';
-import 'active_workout_screen.dart' show WorkoutExercise, CompletedWorkout;
+import '../utils/home_helpers.dart';
+import '../models/workout.dart' show WorkoutExercise, CompletedWorkout;
 import 'workout_history_screen.dart';
+import 'exercise_detail_screen.dart' show PRDetailScreen;
+import '../widgets/shared_widgets.dart' show SectionHeader;
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
@@ -24,34 +27,6 @@ class HomeScreen extends StatelessWidget {
   final void Function(int tab) onNavigate;
   final CompletedWorkout? lastWorkout;
 
-  static Routine _pickNextRoutine(List<Routine> routines) {
-    return routines.reduce((a, b) {
-      if (a.lastDone == null) return a;
-      if (b.lastDone == null) return b;
-      return a.lastDone!.isBefore(b.lastDone!) ? a : b;
-    });
-  }
-
-  static String _greeting() {
-    final h = DateTime.now().hour;
-    if (h < 5)  return 'Still up?';
-    if (h < 12) return 'Good morning.';
-    if (h < 17) return 'Good afternoon.';
-    if (h < 21) return 'Good evening.';
-    return 'Late session?';
-  }
-
-  static bool _isSameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
-
-  static String _motivationLine(int streak, bool doneToday) {
-    if (doneToday) return 'Session complete. Rest and recover.';
-    if (streak == 0) return 'Every legend starts somewhere.';
-    if (streak < 4)  return 'Building the habit. Keep going.';
-    if (streak < 8)  return 'The streak is real — don\'t break it.';
-    if (streak < 15) return '$streak days and counting. Impressive.';
-    return 'You\'re in the top 1%. $streak day streak.';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +46,7 @@ class HomeScreen extends StatelessWidget {
             final prs        = WorkoutHistoryStore.allTimePRs;
 
             final doneToday = history.isNotEmpty &&
-                _isSameDay(history.first.completedAt, DateTime.now());
+                HomeHelpers.isSameDay(history.first.completedAt, DateTime.now());
 
             final effectiveHistory = history.isNotEmpty
                 ? history
@@ -93,13 +68,25 @@ class HomeScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _greeting(),
+                                'VELT',
+                                style: AppTypography.caption(
+                                  c.accentIron.withValues(alpha: 0.65),
+                                ).copyWith(
+                                  fontSize: 10,
+                                  letterSpacing: 3.0,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1,
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                HomeHelpers.greeting(),
                                 style: AppTypography.displayL(c.textPrimary).copyWith(
                                   fontSize: 30, letterSpacing: -1, height: 1),
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                _motivationLine(streak, doneToday),
+                                HomeHelpers.motivationLine(streak, doneToday, prs.length),
                                 style: AppTypography.bodyS(c.textTertiary).copyWith(
                                   fontSize: 13, height: 1.4),
                               ),
@@ -112,10 +99,10 @@ class HomeScreen extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
-                            color: c.accentIron.withValues(alpha: 0.08),
+                            color: c.accentIron.withValues(alpha: 0.14),
                             borderRadius: BorderRadius.circular(AppRadius.full),
                             border: Border.all(
-                              color: c.accentIron.withValues(alpha: 0.22)),
+                              color: c.accentIron.withValues(alpha: 0.36)),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -149,7 +136,7 @@ class HomeScreen extends StatelessWidget {
                         builder: (ctx, routines, _) {
                           final next = routines.isEmpty
                               ? null
-                              : _pickNextRoutine(routines);
+                              : HomeHelpers.pickNextRoutine(routines);
                           return _TodayCard(
                             routine: next,
                             doneToday: doneToday,
@@ -162,49 +149,77 @@ class HomeScreen extends StatelessWidget {
                           );
                         },
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 18),
 
-                      // ── Stats + Activity ──────────────────────
-                      _StatsAndActivity(
-                        streak: streak,
-                        weekVolumeKg: weekVolume,
-                        monthWorkouts: monthCount,
-                        dotDays: dotDays,
-                        c: c,
+                      // ── Stats row ────────────────────────────
+                      Row(
+                        children: [
+                          _StatBox(
+                            value: streak > 0 ? '$streak' : '—',
+                            label: 'Day Streak',
+                            icon: Icons.local_fire_department_rounded,
+                            highlight: streak >= 3,
+                            c: c,
+                          ),
+                          const SizedBox(width: 8),
+                          _StatBox(
+                            value: WeightUnit.formatVolume(weekVolume),
+                            label: 'This Week',
+                            icon: Icons.fitness_center_rounded,
+                            highlight: false,
+                            c: c,
+                          ),
+                          const SizedBox(width: 8),
+                          _StatBox(
+                            value: '$monthCount',
+                            label: 'This Month',
+                            icon: Icons.calendar_today_outlined,
+                            highlight: false,
+                            c: c,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 22),
+                      const SizedBox(height: 20),
+
+                      // ── Last 7 Days ───────────────────────────
+                      _Last7Days(dotDays: dotDays, c: c),
+                      const SizedBox(height: 20),
 
                       // ── Last Session ──────────────────────────
-                      if (effectiveHistory.isNotEmpty) ...[
-                        _SectionLabel(
-                          label: 'Last Session',
-                          action: history.length > 1 ? 'All History' : null,
-                          onAction: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const WorkoutHistoryScreen())),
-                        ),
-                        const SizedBox(height: 8),
+                      SectionHeader(
+                        label: 'Last Session',
+                        action: history.length > 1 ? 'All History' : null,
+                        onAction: history.length > 1
+                            ? () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const WorkoutHistoryScreen()))
+                            : null,
+                        padding: const EdgeInsets.only(bottom: 8),
+                      ),
+                      if (effectiveHistory.isNotEmpty)
                         _LastWorkoutCard(
                           workout: effectiveHistory.first,
                           c: c,
-                        ),
-                        const SizedBox(height: 22),
-                      ],
+                        )
+                      else
+                        _SkeletonLastSession(c: c),
+                      const SizedBox(height: 20),
 
                       // ── Personal Records ──────────────────────
-                      _SectionLabel(
+                      SectionHeader(
                         label: 'Personal Records',
                         action: prs.isNotEmpty ? 'See all' : null,
                         onAction: () => onNavigate(VeltTabs.progress),
+                        padding: const EdgeInsets.only(bottom: 8),
                       ),
-                      const SizedBox(height: 8),
                       if (prs.isNotEmpty)
                         SizedBox(
                           height: 100,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             padding: EdgeInsets.zero,
+                            physics: const BouncingScrollPhysics(),
                             itemCount: prs.entries.take(8).length,
                             separatorBuilder: (_, __) => const SizedBox(width: 8),
                             itemBuilder: (_, i) {
@@ -242,44 +257,8 @@ class HomeScreen extends StatelessWidget {
   };
 }
 
-// ── Section Label ─────────────────────────────────────────────
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.label, this.action, this.onAction});
-  final String label;
-  final String? action;
-  final VoidCallback? onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = Theme.of(context).extension<AppColors>()!;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: AppTypography.caption(c.textTertiary).copyWith(
-            letterSpacing: 0.8, fontWeight: FontWeight.w700, fontSize: 11),
-        ),
-        const Spacer(),
-        if (action != null && onAction != null)
-          GestureDetector(
-            onTap: onAction,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text(
-                action!,
-                style: AppTypography.bodyS(c.accentIron).copyWith(
-                  fontWeight: FontWeight.w600, fontSize: 12),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 // ── Today Card ────────────────────────────────────────────────
-class _TodayCard extends StatelessWidget {
+class _TodayCard extends StatefulWidget {
   const _TodayCard({
     required this.routine,
     required this.doneToday,
@@ -296,16 +275,43 @@ class _TodayCard extends StatelessWidget {
   final AppColors c;
 
   @override
+  State<_TodayCard> createState() => _TodayCardState();
+}
+
+class _TodayCardState extends State<_TodayCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseCtrl;
+  late Animation<double> _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1900),
+    )..repeat(reverse: true);
+    _pulse = CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _pulseCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (routine == null) {
+    final c = widget.c;
+
+    if (widget.routine == null) {
       return _SetupCard(
-        onBrowse: onBrowsePrograms,
-        onQuickStart: onQuickStart,
+        onBrowse: widget.onBrowsePrograms,
+        onQuickStart: widget.onQuickStart,
         c: c,
       );
     }
 
-    final exercises = routine!.exercises;
+    final exercises = widget.routine!.exercises;
     final preview   = exercises
         .take(4)
         .map((e) => e.name.split(' ').first)
@@ -313,14 +319,14 @@ class _TodayCard extends StatelessWidget {
     final moreCount = (exercises.length - 4).clamp(0, 99);
     final sets      = exercises.fold(0, (a, e) => a + e.sets.length);
     final estMin    = (sets * 2.5).round().clamp(15, 120);
-    final label     = doneToday ? 'NEXT SESSION' : "TODAY'S PLAN";
+    final label     = widget.doneToday ? 'NEXT SESSION' : "TODAY'S PLAN";
 
     return Container(
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
         color: c.surfaceElevated,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: c.accentIron.withValues(alpha: 0.28)),
+        border: Border.all(color: c.divider, width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -330,7 +336,15 @@ class _TodayCard extends StatelessWidget {
             height: 3,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [c.accentIron, c.accentIron.withValues(alpha: 0.3)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                stops: const [0.0, 0.25, 0.75, 1.0],
+                colors: [
+                  Colors.transparent,
+                  c.accentIron,
+                  c.accentIron,
+                  Colors.transparent,
+                ],
               ),
             ),
           ),
@@ -375,7 +389,7 @@ class _TodayCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
             child: Text(
-              routine!.name,
+              widget.routine!.name,
               style: AppTypography.displayM(c.textPrimary).copyWith(
                 fontSize: 24, letterSpacing: -0.8, height: 1.1),
             ),
@@ -393,18 +407,35 @@ class _TodayCard extends StatelessWidget {
               ),
             ),
 
-          // Start button
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
+          // Start button — pulsing glow when not done today
+          AnimatedBuilder(
+            animation: _pulse,
+            builder: (_, child) => Container(
+              margin: const EdgeInsets.fromLTRB(18, 16, 18, 0),
+              decoration: widget.doneToday
+                  ? null
+                  : BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      boxShadow: [
+                        BoxShadow(
+                          color: c.accentIron.withValues(
+                            alpha: 0.14 + _pulse.value * 0.20),
+                          blurRadius: 10 + _pulse.value * 14,
+                          spreadRadius: _pulse.value * 3,
+                        ),
+                      ],
+                    ),
+              child: child,
+            ),
             child: SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
                 onPressed: () {
                   HapticFeedback.mediumImpact();
-                  onStart();
+                  widget.onStart();
                 },
                 icon: const Icon(Icons.play_arrow_rounded, size: 20),
-                label: Text('Start ${routine!.name}'),
+                label: const Text('Start Training'),
                 style: FilledButton.styleFrom(
                   backgroundColor: c.accentIron,
                   foregroundColor: Colors.white,
@@ -424,14 +455,21 @@ class _TodayCard extends StatelessWidget {
 
           // Quick start link
           GestureDetector(
-            onTap: onQuickStart,
+            onTap: widget.onQuickStart,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
               child: Center(
-                child: Text(
-                  'or start an empty workout →',
-                  style: AppTypography.bodyS(c.textTertiary).copyWith(
-                    fontSize: 12),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.bolt_rounded, size: 14, color: c.textSecondary),
+                    const SizedBox(width: 5),
+                    Text(
+                      'or start an empty workout',
+                      style: AppTypography.bodyS(c.textSecondary).copyWith(
+                        fontSize: 12.5, fontWeight: FontWeight.w500),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -547,61 +585,139 @@ class _SetupCard extends StatelessWidget {
   }
 }
 
-// ── Stats + Activity ──────────────────────────────────────────
-class _StatsAndActivity extends StatelessWidget {
-  const _StatsAndActivity({
-    required this.streak,
-    required this.weekVolumeKg,
-    required this.monthWorkouts,
-    required this.dotDays,
-    required this.c,
-  });
-  final int streak;
-  final double weekVolumeKg;
-  final int monthWorkouts;
+// ── Last 7 Days ───────────────────────────────────────────────
+class _Last7Days extends StatelessWidget {
+  const _Last7Days({required this.dotDays, required this.c});
   final List<bool> dotDays;
   final AppColors c;
 
   @override
   Widget build(BuildContext context) {
-    final volLabel = WeightUnit.formatVolume(weekVolumeKg);
+    const dayLabels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+    final today = DateTime.now();
+    final labels = List.generate(7, (i) {
+      final day = today.subtract(Duration(days: 6 - i));
+      return dayLabels[day.weekday - 1];
+    });
+    final doneCount = dotDays.where((d) => d).length;
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Stat row
         Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
           children: [
-            _StatBox(
-              value: streak > 0 ? '$streak' : '0',
-              label: 'Day Streak',
-              icon: Icons.local_fire_department_rounded,
-              highlight: streak >= 3,
-              c: c,
+            Text(
+              'LAST 7 DAYS',
+              style: AppTypography.caption(c.textTertiary).copyWith(
+                letterSpacing: 0.8, fontWeight: FontWeight.w700, fontSize: 11),
             ),
-            const SizedBox(width: 8),
-            _StatBox(
-              value: weekVolumeKg > 0 ? volLabel : '—',
-              label: 'This Week',
-              icon: Icons.fitness_center_rounded,
-              highlight: false,
-              c: c,
-            ),
-            const SizedBox(width: 8),
-            _StatBox(
-              value: monthWorkouts > 0 ? '$monthWorkouts' : '0',
-              label: 'This Month',
-              icon: Icons.calendar_today_outlined,
-              highlight: false,
-              c: c,
+            const Spacer(),
+            RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: '$doneCount',
+                    style: AppTypography.bodyS(c.textPrimary).copyWith(
+                      fontWeight: FontWeight.w700, fontSize: 12),
+                  ),
+                  TextSpan(
+                    text: ' of 7 days',
+                    style: AppTypography.bodyS(c.textSecondary).copyWith(
+                      fontSize: 12),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        // Weekly activity
-        _WeeklyActivity(dotDays: dotDays, c: c),
+        const SizedBox(height: 10),
+        Row(
+          children: List.generate(7, (i) {
+            final done    = dotDays[i];
+            final isToday = i == dotDays.length - 1;
+
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(left: i > 0 ? 8 : 0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AspectRatio(
+                      aspectRatio: 1,
+                      child: isToday && !done
+                          ? CustomPaint(
+                              painter: _DashedRectPainter(color: c.accentIron),
+                              child: const SizedBox.expand(),
+                            )
+                          : Container(
+                              decoration: BoxDecoration(
+                                color: done ? c.accentIron : c.surfaceElevated,
+                                borderRadius: BorderRadius.circular(AppRadius.sm),
+                                border: done
+                                    ? null
+                                    : Border.all(
+                                        color: c.divider.withValues(alpha: 0.7),
+                                        width: 0.5),
+                              ),
+                              child: done
+                                  ? const Icon(Icons.check_rounded,
+                                      color: Colors.white, size: 16)
+                                  : null,
+                            ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      labels[i],
+                      style: AppTypography.caption(
+                        isToday ? c.accentIron : c.textTertiary,
+                      ).copyWith(
+                        fontSize: 10,
+                        fontWeight:
+                            isToday ? FontWeight.w700 : FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ),
       ],
     );
   }
+}
+
+class _DashedRectPainter extends CustomPainter {
+  const _DashedRectPainter({required this.color});
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(
+        Rect.fromLTWH(0.75, 0.75, size.width - 1.5, size.height - 1.5),
+        const Radius.circular(AppRadius.sm),
+      ));
+
+    const dashLen = 4.0;
+    const gapLen  = 3.0;
+    for (final m in path.computeMetrics()) {
+      double d = 0;
+      while (d < m.length) {
+        canvas.drawPath(m.extractPath(d, (d + dashLen).clamp(0, m.length)), paint);
+        d += dashLen + gapLen;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedRectPainter old) => old.color != color;
 }
 
 class _StatBox extends StatelessWidget {
@@ -661,93 +777,6 @@ class _StatBox extends StatelessWidget {
   }
 }
 
-class _WeeklyActivity extends StatelessWidget {
-  const _WeeklyActivity({required this.dotDays, required this.c});
-  final List<bool> dotDays;
-  final AppColors c;
-
-  @override
-  Widget build(BuildContext context) {
-    const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-    final doneCount = dotDays.where((d) => d).length;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
-        color: c.surfaceElevated,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: c.divider.withValues(alpha: 0.5)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'LAST 7 DAYS',
-                style: AppTypography.caption(c.textTertiary).copyWith(
-                  fontSize: 9, letterSpacing: 1.1, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '$doneCount / 7 sessions',
-                style: AppTypography.bodyS(c.textSecondary).copyWith(fontSize: 11),
-              ),
-            ],
-          ),
-          const Spacer(),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: List.generate(7, (i) {
-              final done    = dotDays[i];
-              final isToday = i == dotDays.length - 1;
-              return Padding(
-                padding: const EdgeInsets.only(left: 5),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      width: 26,
-                      height: 26,
-                      decoration: BoxDecoration(
-                        color: done
-                            ? (isToday
-                                ? c.accentIron
-                                : c.accentIron.withValues(alpha: 0.55))
-                            : c.surfaceHigh,
-                        borderRadius: BorderRadius.circular(6),
-                        border: isToday && !done
-                            ? Border.all(
-                                color: c.accentIron.withValues(alpha: 0.4),
-                                width: 1.5)
-                            : null,
-                      ),
-                      child: done
-                          ? Icon(Icons.check_rounded,
-                              size: 13,
-                              color: Colors.white.withValues(alpha: 0.9))
-                          : null,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      labels[i],
-                      style: AppTypography.caption(
-                        done ? c.textSecondary : c.textTertiary,
-                      ).copyWith(fontSize: 9),
-                    ),
-                  ],
-                ),
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ── Last Workout Card ─────────────────────────────────────────
 class _LastWorkoutCard extends StatelessWidget {
   const _LastWorkoutCard({required this.workout, required this.c});
@@ -782,13 +811,13 @@ class _LastWorkoutCard extends StatelessWidget {
           children: [
             // Icon
             Container(
-              width: 40, height: 40,
+              width: 44, height: 44,
               decoration: BoxDecoration(
                 color: c.surfaceHigh,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: Icon(Icons.fitness_center_rounded,
-                size: 18, color: c.textTertiary),
+                size: 18, color: c.accentIron),
             ),
             const SizedBox(width: 12),
 
@@ -800,7 +829,7 @@ class _LastWorkoutCard extends StatelessWidget {
                   Text(
                     workout.routineName,
                     style: AppTypography.titleM(c.textPrimary).copyWith(
-                      fontSize: 15, letterSpacing: -0.2),
+                      fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.1),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -898,45 +927,108 @@ class _PRChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => PRDetailScreen(exerciseName: exercise),
+      )),
+      child: Container(
+        width: 138,
+        padding: const EdgeInsets.fromLTRB(13, 13, 13, 11),
+        decoration: BoxDecoration(
+          color: c.surfaceElevated,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: c.divider.withValues(alpha: 0.5)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.emoji_events_rounded,
+                  size: 14, color: c.accentIron),
+                const Spacer(),
+                Text(
+                  date,
+                  style: AppTypography.caption(c.textTertiary).copyWith(
+                    fontSize: 9),
+                ),
+              ],
+            ),
+            const Spacer(),
+            Text(
+              value,
+              style: AppTypography.displayM(c.textPrimary).copyWith(
+                fontSize: 22,
+                letterSpacing: -0.6,
+                height: 1,
+                fontFeatures: [const FontFeature.tabularFigures()],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    exercise,
+                    style: AppTypography.bodyS(c.textSecondary).copyWith(fontSize: 11),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Icon(Icons.chevron_right_rounded,
+                  size: 13, color: c.textSecondary),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Empty Last Session ────────────────────────────────────────
+class _SkeletonLastSession extends StatelessWidget {
+  const _SkeletonLastSession({required this.c});
+  final AppColors c;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      width: 138,
-      padding: const EdgeInsets.fromLTRB(13, 13, 13, 11),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: BoxDecoration(
         color: c.surfaceElevated,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: c.divider.withValues(alpha: 0.5)),
+        border: Border.all(color: c.divider.withValues(alpha: 0.4)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(Icons.emoji_events_rounded,
-                size: 14, color: c.accentIron),
-              const Spacer(),
-              Text(
-                date,
-                style: AppTypography.caption(c.textTertiary).copyWith(
-                  fontSize: 9),
-              ),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: AppTypography.displayM(c.textPrimary).copyWith(
-              fontSize: 22,
-              letterSpacing: -0.6,
-              height: 1,
-              fontFeatures: [const FontFeature.tabularFigures()],
+          Container(
+            width: 44, height: 44,
+            decoration: BoxDecoration(
+              color: c.accentIron.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
+            child: Icon(Icons.fitness_center_rounded,
+                size: 20, color: c.accentIron.withValues(alpha: 0.6)),
           ),
-          const SizedBox(height: 4),
-          Text(
-            exercise,
-            style: AppTypography.bodyS(c.textSecondary).copyWith(fontSize: 11),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'No workouts yet',
+                  style: AppTypography.titleS(c.textPrimary).copyWith(
+                    fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Complete your first session to see it here',
+                  style: AppTypography.bodyS(c.textTertiary).copyWith(
+                    fontSize: 11),
+                ),
+              ],
+            ),
           ),
         ],
       ),

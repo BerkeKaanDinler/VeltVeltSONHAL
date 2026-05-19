@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>VELT reads health data to keep your fitness activity in sync.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>VELT writes your workouts, calories and exercise time to Apple Health.</string>
 </dict>
 </plist>

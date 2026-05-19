@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import '../screens/active_workout_screen.dart'
-    show CompletedWorkout, WorkoutExercise;
+import '../models/workout.dart' show CompletedWorkout, WorkoutExercise;
 import '../widgets/set_row.dart' show SetRowData;
 import 'prefs_service.dart';
 
@@ -22,6 +21,11 @@ class WorkoutHistoryStore {
         history.value = [];
       }
     }
+  }
+
+  static Future<void> clearAll() async {
+    history.value = [];
+    await PrefsService.saveWorkoutHistory('[]');
   }
 
   static Future<void> add(CompletedWorkout w) async {
@@ -143,6 +147,37 @@ class WorkoutHistoryStore {
         return !d.isBefore(weekStart) && !d.isAfter(weekEnd);
       }).fold(0.0, (s, w) => s + w.totalVolume);
       result.add((label: _weekLabel(weekStart), volume: vol));
+    }
+    return result;
+  }
+
+  // Monthly volume for last N months (oldest first)
+  static List<({String label, double volume})> monthlyVolumes({int months = 8}) {
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun',
+                        'Jul','Aug','Sep','Oct','Nov','Dec'];
+    final now = DateTime.now();
+    final result = <({String label, double volume})>[];
+    for (int i = months - 1; i >= 0; i--) {
+      int m = now.month - i;
+      int y = now.year;
+      while (m <= 0) { m += 12; y--; }
+      final vol = history.value.where((w) =>
+          w.completedAt.year == y && w.completedAt.month == m)
+          .fold(0.0, (s, w) => s + w.totalVolume);
+      result.add((label: monthNames[m - 1], volume: vol));
+    }
+    return result;
+  }
+
+  // Yearly volume for last N years (oldest first)
+  static List<({String label, double volume})> yearlyVolumes({int years = 8}) {
+    final now = DateTime.now();
+    final result = <({String label, double volume})>[];
+    for (int i = years - 1; i >= 0; i--) {
+      final y = now.year - i;
+      final vol = history.value.where((w) => w.completedAt.year == y)
+          .fold(0.0, (s, w) => s + w.totalVolume);
+      result.add((label: '$y', volume: vol));
     }
     return result;
   }

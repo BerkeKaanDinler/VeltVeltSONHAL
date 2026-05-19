@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../screens/active_workout_screen.dart' show WorkoutExercise;
+import '../models/workout.dart' show WorkoutExercise;
 
 class Routine {
   Routine({

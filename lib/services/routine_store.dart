@@ -27,6 +27,11 @@ class RoutineStore {
     await PrefsService.saveRoutines(json);
   }
 
+  static Future<void> clearAll() async {
+    routines.value = [];
+    await PrefsService.saveRoutines('[]');
+  }
+
   static Future<void> add(Routine r) async {
     routines.value = [...routines.value, r];
     await _persist();

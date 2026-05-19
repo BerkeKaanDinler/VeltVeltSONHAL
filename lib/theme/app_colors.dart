@@ -1,6 +1,6 @@
 // VELT — AppColors
-// All colors defined as const. Widgets NEVER hardcode hex values.
-// Dark theme is default; Warm Paper is Pro-only optional.
+// 4 themes: iron (free), slate (free), roseGold (pro), emerald (pro)
+// Colors match tokens.js exactly. Never hardcode hex in widgets.
 // Apply via Theme.of(context).extension<AppColors>()
 
 import 'package:flutter/material.dart';
@@ -21,6 +21,9 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.successLime,
     required this.warningAmber,
     required this.errorRose,
+    this.protein  = const Color(0xFFD97706),
+    this.carbs    = const Color(0xFF38BDF8),
+    this.fat      = const Color(0xFF22C55E),
   });
 
   final Color ink;
@@ -36,158 +39,76 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color successLime;
   final Color warningAmber;
   final Color errorRose;
+  final Color protein;
+  final Color carbs;
+  final Color fat;
 
-  // ── Iron Dark (default) ──────────────────────────────────
+  // ── Iron Dark (free) — signature VELT look, deep black + amber ──
   static const ironDark = AppColors(
-    ink:              Color(0xFF0B0F17),
-    surface:          Color(0xFF0B0F17),
-    surfaceElevated:  Color(0xFF1A2030),
-    surfaceHigh:      Color(0xFF252D3D),
-    divider:          Color(0xFF2A3142),
+    ink:              Color(0xFF0F0F0F),
+    surface:          Color(0xFF0F0F0F),
+    surfaceElevated:  Color(0xFF1A1A1A),
+    surfaceHigh:      Color(0xFF242424),
+    divider:          Color(0xFF2A2A2A),
+    textPrimary:      Color(0xFFFFFFFF),
+    textSecondary:    Color(0xFFA0A0A0),
+    textTertiary:     Color(0xFF6B6B6B),
+    accentIron:       Color(0xFFD97706),
+    accentIronSoft:   Color(0xFF92400E),
+    successLime:      Color(0xFF22C55E),
+    warningAmber:     Color(0xFFF59E0B),
+    errorRose:        Color(0xFFEF4444),
+  );
+
+  // ── Slate Mono (free) — cool industrial grayscale ───────────────
+  static const slateMono = AppColors(
+    ink:              Color(0xFF0A0E1A),
+    surface:          Color(0xFF0A0E1A),
+    surfaceElevated:  Color(0xFF141927),
+    surfaceHigh:      Color(0xFF1E2434),
+    divider:          Color(0xFF252B3D),
     textPrimary:      Color(0xFFF1F5F9),
     textSecondary:    Color(0xFF94A3B8),
     textTertiary:     Color(0xFF64748B),
-    accentIron:       Color(0xFFD97706),
-    accentIronSoft:   Color(0xFF92400E),
+    accentIron:       Color(0xFF94A3B8),
+    accentIronSoft:   Color(0xFF475569),
+    successLime:      Color(0xFF22C55E),
+    warningAmber:     Color(0xFFF59E0B),
+    errorRose:        Color(0xFFEF4444),
+  );
+
+  // ── Rose Gold (pro) — warm noir with rose gold accents ──────────
+  static const roseGold = AppColors(
+    ink:              Color(0xFF100A0E),
+    surface:          Color(0xFF100A0E),
+    surfaceElevated:  Color(0xFF1B131A),
+    surfaceHigh:      Color(0xFF241B22),
+    divider:          Color(0xFF2D2128),
+    textPrimary:      Color(0xFFFBEEF2),
+    textSecondary:    Color(0xFFB89BA8),
+    textTertiary:     Color(0xFF896678),
+    accentIron:       Color(0xFFF472B6),
+    accentIronSoft:   Color(0xFF9D174D),
+    successLime:      Color(0xFF22C55E),
+    warningAmber:     Color(0xFFF59E0B),
+    errorRose:        Color(0xFFEF4444),
+  );
+
+  // ── Emerald Premium (pro) — deep forest with emerald highlights ─
+  static const emeraldPremium = AppColors(
+    ink:              Color(0xFF0A1410),
+    surface:          Color(0xFF0A1410),
+    surfaceElevated:  Color(0xFF0F1F18),
+    surfaceHigh:      Color(0xFF162B22),
+    divider:          Color(0xFF1F352A),
+    textPrimary:      Color(0xFFE8F5EE),
+    textSecondary:    Color(0xFF7BAB94),
+    textTertiary:     Color(0xFF527A68),
+    accentIron:       Color(0xFF10B981),
+    accentIronSoft:   Color(0xFF065F46),
     successLime:      Color(0xFF84CC16),
     warningAmber:     Color(0xFFF59E0B),
-    errorRose:        Color(0xFFE11D48),
-  );
-
-  // ── Warm Paper (Pro only) ────────────────────────────────
-  static const warmPaper = AppColors(
-    ink:              Color(0xFFF5F0E8),
-    surface:          Color(0xFFFAF7F2),
-    surfaceElevated:  Color(0xFFFFFFFF),
-    surfaceHigh:      Color(0xFFF0EBE3),
-    divider:          Color(0xFFDDD5C8),
-    textPrimary:      Color(0xFF1A1410),
-    textSecondary:    Color(0xFF6B5B4E),
-    textTertiary:     Color(0xFF9C8878),
-    accentIron:       Color(0xFFB45309),
-    accentIronSoft:   Color(0xFFFEF3C7),
-    successLime:      Color(0xFF65A30D),
-    warningAmber:     Color(0xFFD97706),
-    errorRose:        Color(0xFFDC2626),
-  );
-
-  // ── Midnight Steel ───────────────────────────────────────
-  static const midnightSteel = AppColors(
-    ink:              Color(0xFF050508),
-    surface:          Color(0xFF0A0A0F),
-    surfaceElevated:  Color(0xFF141420),
-    surfaceHigh:      Color(0xFF1C1C2E),
-    divider:          Color(0xFF252540),
-    textPrimary:      Color(0xFFE2E4F0),
-    textSecondary:    Color(0xFF8B8FAF),
-    textTertiary:     Color(0xFF5A5E7A),
-    accentIron:       Color(0xFF6366F1),
-    accentIronSoft:   Color(0xFF3730A3),
-    successLime:      Color(0xFF84CC16),
-    warningAmber:     Color(0xFFF59E0B),
-    errorRose:        Color(0xFFE11D48),
-  );
-
-  // ── Forest Iron ──────────────────────────────────────────
-  static const forestIron = AppColors(
-    ink:              Color(0xFF050F07),
-    surface:          Color(0xFF0D1A0F),
-    surfaceElevated:  Color(0xFF162018),
-    surfaceHigh:      Color(0xFF1E2B20),
-    divider:          Color(0xFF253228),
-    textPrimary:      Color(0xFFE4EFE6),
-    textSecondary:    Color(0xFF7FA882),
-    textTertiary:     Color(0xFF4E6B51),
-    accentIron:       Color(0xFF22C55E),
-    accentIronSoft:   Color(0xFF14532D),
-    successLime:      Color(0xFF86EFAC),
-    warningAmber:     Color(0xFFF59E0B),
-    errorRose:        Color(0xFFE11D48),
-  );
-
-  // ── Blood Orange ─────────────────────────────────────────
-  static const bloodOrange = AppColors(
-    ink:              Color(0xFF0A0500),
-    surface:          Color(0xFF150A00),
-    surfaceElevated:  Color(0xFF1E1000),
-    surfaceHigh:      Color(0xFF291500),
-    divider:          Color(0xFF362000),
-    textPrimary:      Color(0xFFFFF1E6),
-    textSecondary:    Color(0xFFC4956B),
-    textTertiary:     Color(0xFF7A5434),
-    accentIron:       Color(0xFFEA580C),
-    accentIronSoft:   Color(0xFF7C2D12),
-    successLime:      Color(0xFF84CC16),
-    warningAmber:     Color(0xFFF59E0B),
-    errorRose:        Color(0xFFE11D48),
-  );
-
-  // ── Espresso ─────────────────────────────────────────────
-  static const espresso = AppColors(
-    ink:              Color(0xFF0F0805),
-    surface:          Color(0xFF1A0F0A),
-    surfaceElevated:  Color(0xFF261710),
-    surfaceHigh:      Color(0xFF322010),
-    divider:          Color(0xFF3D2A18),
-    textPrimary:      Color(0xFFF5EEE8),
-    textSecondary:    Color(0xFFB08060),
-    textTertiary:     Color(0xFF7A5A3A),
-    accentIron:       Color(0xFFC2692A),
-    accentIronSoft:   Color(0xFF7C3B10),
-    successLime:      Color(0xFF84CC16),
-    warningAmber:     Color(0xFFF59E0B),
-    errorRose:        Color(0xFFE11D48),
-  );
-
-  // ── Arctic ───────────────────────────────────────────────
-  static const arctic = AppColors(
-    ink:              Color(0xFF050A12),
-    surface:          Color(0xFF0A0F18),
-    surfaceElevated:  Color(0xFF111827),
-    surfaceHigh:      Color(0xFF1A2438),
-    divider:          Color(0xFF243044),
-    textPrimary:      Color(0xFFE8F4FE),
-    textSecondary:    Color(0xFF8BAFC8),
-    textTertiary:     Color(0xFF4A6E8A),
-    accentIron:       Color(0xFF38BDF8),
-    accentIronSoft:   Color(0xFF0C4A6E),
-    successLime:      Color(0xFF84CC16),
-    warningAmber:     Color(0xFFF59E0B),
-    errorRose:        Color(0xFFE11D48),
-  );
-
-  // ── Obsidian ─────────────────────────────────────────────
-  static const obsidian = AppColors(
-    ink:              Color(0xFF080808),
-    surface:          Color(0xFF0C0C0E),
-    surfaceElevated:  Color(0xFF161618),
-    surfaceHigh:      Color(0xFF1E1E22),
-    divider:          Color(0xFF28282E),
-    textPrimary:      Color(0xFFEEE8FF),
-    textSecondary:    Color(0xFF8B82B0),
-    textTertiary:     Color(0xFF5A5272),
-    accentIron:       Color(0xFFA78BFA),
-    accentIronSoft:   Color(0xFF4C1D95),
-    successLime:      Color(0xFF84CC16),
-    warningAmber:     Color(0xFFF59E0B),
-    errorRose:        Color(0xFFE11D48),
-  );
-
-  // ── Military ─────────────────────────────────────────────
-  static const military = AppColors(
-    ink:              Color(0xFF080C05),
-    surface:          Color(0xFF0F150A),
-    surfaceElevated:  Color(0xFF161F0D),
-    surfaceHigh:      Color(0xFF1E2B14),
-    divider:          Color(0xFF283818),
-    textPrimary:      Color(0xFFE8F0E0),
-    textSecondary:    Color(0xFF8AA870),
-    textTertiary:     Color(0xFF5A7040),
-    accentIron:       Color(0xFF84CC16),
-    accentIronSoft:   Color(0xFF3A5A0A),
-    successLime:      Color(0xFFA3E635),
-    warningAmber:     Color(0xFFF59E0B),
-    errorRose:        Color(0xFFE11D48),
+    errorRose:        Color(0xFFEF4444),
   );
 
   @override
@@ -197,6 +118,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? textPrimary, Color? textSecondary, Color? textTertiary,
     Color? accentIron, Color? accentIronSoft,
     Color? successLime, Color? warningAmber, Color? errorRose,
+    Color? protein, Color? carbs, Color? fat,
   }) => AppColors(
     ink:             ink             ?? this.ink,
     surface:         surface         ?? this.surface,
@@ -211,6 +133,9 @@ class AppColors extends ThemeExtension<AppColors> {
     successLime:     successLime     ?? this.successLime,
     warningAmber:    warningAmber    ?? this.warningAmber,
     errorRose:       errorRose       ?? this.errorRose,
+    protein:         protein         ?? this.protein,
+    carbs:           carbs           ?? this.carbs,
+    fat:             fat             ?? this.fat,
   );
 
   @override
@@ -230,6 +155,9 @@ class AppColors extends ThemeExtension<AppColors> {
       successLime:     Color.lerp(successLime,     other.successLime,     t)!,
       warningAmber:    Color.lerp(warningAmber,    other.warningAmber,    t)!,
       errorRose:       Color.lerp(errorRose,       other.errorRose,       t)!,
+      protein:         Color.lerp(protein,         other.protein,         t)!,
+      carbs:           Color.lerp(carbs,           other.carbs,           t)!,
+      fat:             Color.lerp(fat,             other.fat,             t)!,
     );
   }
 }

@@ -107,25 +107,15 @@ abstract class AppTheme {
   );
 
   // ── Public theme getters ──────────────────────────────────
-  static ThemeData get darkIron        => _build(AppColors.ironDark);
-  static ThemeData get warmPaper       => _build(AppColors.warmPaper);
-  static ThemeData get midnightSteel   => _build(AppColors.midnightSteel);
-  static ThemeData get forestIron      => _build(AppColors.forestIron);
-  static ThemeData get bloodOrange     => _build(AppColors.bloodOrange);
-  static ThemeData get espresso        => _build(AppColors.espresso);
-  static ThemeData get arctic          => _build(AppColors.arctic);
-  static ThemeData get obsidian        => _build(AppColors.obsidian);
-  static ThemeData get military        => _build(AppColors.military);
+  static ThemeData get darkIron  => _build(AppColors.ironDark);
+  static ThemeData get slate     => _build(AppColors.slateMono);
+  static ThemeData get roseGold  => _build(AppColors.roseGold);
+  static ThemeData get emerald   => _build(AppColors.emeraldPremium);
 
   static const Map<String, AppColors> allThemes = {
-    'iron':          AppColors.ironDark,
-    'warmPaper':     AppColors.warmPaper,
-    'midnightSteel': AppColors.midnightSteel,
-    'forestIron':    AppColors.forestIron,
-    'bloodOrange':   AppColors.bloodOrange,
-    'espresso':      AppColors.espresso,
-    'arctic':        AppColors.arctic,
-    'obsidian':      AppColors.obsidian,
-    'military':      AppColors.military,
+    'iron':     AppColors.ironDark,
+    'slate':    AppColors.slateMono,
+    'roseGold': AppColors.roseGold,
+    'emerald':  AppColors.emeraldPremium,
   };
 }

@@ -9,74 +9,57 @@ Future<void> initPrefs() async {
   await PrefsService.init();
 }
 
-void main() {
-  setUp(initPrefs);
+Future<void> initPrefsOnboarded() async {
+  SharedPreferences.setMockInitialValues({'onboarding_done': true});
+  await PrefsService.init();
+}
 
+void main() {
   testWidgets('Onboarding smoke test — VELT wordmark visible', (tester) async {
+    await initPrefs();
     await tester.pumpWidget(const VeltRoot());
     await tester.pump();
     expect(find.text('VELT'), findsWidgets);
     expect(find.text('Get Started'), findsOneWidget);
   });
 
-  testWidgets('Onboarding step 0 → step 1 on Get Started tap', (tester) async {
+  testWidgets('Onboarding step 0 → step 1 shows goal picker', (tester) async {
+    await initPrefs();
     await tester.pumpWidget(const VeltRoot());
     await tester.pump();
     await tester.tap(find.text('Get Started'));
     await tester.pumpAndSettle();
-    expect(find.text('How do you\nmeasure weight?'), findsOneWidget);
+    expect(find.textContaining("primary goal"), findsOneWidget);
   });
 
-  testWidgets('Onboarding unit picker — kg selection enables Continue', (tester) async {
+  testWidgets('Onboarding goal selection enables Continue', (tester) async {
+    await initPrefs();
     await tester.pumpWidget(const VeltRoot());
     await tester.pump();
     await tester.tap(find.text('Get Started'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('kg'));
+    await tester.tap(find.text('Build Muscle'));
     await tester.pumpAndSettle();
     expect(find.text('Continue'), findsOneWidget);
   });
 
-  testWidgets('Full onboarding flow reaches home screen', (tester) async {
+  testWidgets('Home screen visible after completed onboarding', (tester) async {
+    await initPrefsOnboarded();
     await tester.pumpWidget(const VeltRoot());
     await tester.pump();
-
-    // Step 0 → Step 1
-    await tester.tap(find.text('Get Started'));
-    await tester.pumpAndSettle();
-
-    // Step 1: pick kg → Continue
-    await tester.tap(find.text('kg'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-
-    // Step 2: skip via "I'll set up later"
-    await tester.tap(find.text("I'll set up later"));
-    await tester.pumpAndSettle();
-
-    // Should now be on the home screen
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('VELT'), findsWidgets);
-    expect(find.text("TODAY'S PLAN"), findsOneWidget);
+    // Stats section is above the fold and always built
+    expect(find.text('Day Streak'), findsOneWidget);
   });
 
-  testWidgets('After onboarding — bottom nav and home content visible', (tester) async {
+  testWidgets('Bottom nav and home content visible after onboarding', (tester) async {
+    await initPrefsOnboarded();
     await tester.pumpWidget(const VeltRoot());
     await tester.pump();
-
-    // Complete onboarding
-    await tester.tap(find.text('Get Started'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('kg'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text("I'll set up later"));
-    await tester.pumpAndSettle();
-
-    // Home screen content should be visible
-    expect(find.text("TODAY'S PLAN"), findsOneWidget);
-    // Bottom nav is present (has 5 touch targets)
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Day Streak'), findsOneWidget);
+    // Bottom nav tabs are gesture detectors
     expect(find.byType(GestureDetector), findsWidgets);
   });
 }

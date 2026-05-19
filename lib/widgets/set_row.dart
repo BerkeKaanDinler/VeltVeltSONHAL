@@ -1,11 +1,8 @@
-﻿// VELT — SetRow widget spec
-// The most-used component. Every workout session shows 20-60 SetRows.
-// Must be pixel-perfect, fast, and thumb-friendly.
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
 import '../services/prefs_service.dart';
 
 enum SetType { normal, warmup, drop, failure }
@@ -58,6 +55,8 @@ class SetRow extends StatefulWidget {
     required this.onComplete,
     this.onWeightChanged,
     this.onRepsChanged,
+    this.onTypeChanged,
+    this.prWeight,
   });
 
   final SetRowData data;
@@ -65,15 +64,22 @@ class SetRow extends StatefulWidget {
   final void Function(bool done) onComplete;
   final void Function(double weight)? onWeightChanged;
   final void Function(int reps)?    onRepsChanged;
+  final void Function(SetType type)? onTypeChanged;
+  final double? prWeight;
 
   @override
   State<SetRow> createState() => _SetRowState();
 }
 
-class _SetRowState extends State<SetRow> {
+class _SetRowState extends State<SetRow>
+    with SingleTickerProviderStateMixin {
   late double _weight;
   late int    _reps;
   late bool   _done;
+
+  late AnimationController _checkAnim;
+  late Animation<double>   _checkScale;
+  late Animation<double>   _rowFlash;
 
   @override
   void initState() {
@@ -81,18 +87,143 @@ class _SetRowState extends State<SetRow> {
     _weight = widget.data.weight;
     _reps   = widget.data.reps;
     _done   = widget.data.isDone;
+
+    _checkAnim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 480),
+    );
+    // Elastic spring for the checkmark icon
+    _checkScale = CurvedAnimation(
+      parent: _checkAnim,
+      curve: Curves.elasticOut,
+    );
+    // Quick flash for the row background (0→1→0 in first 30% of animation)
+    _rowFlash = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 30),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 70),
+    ]).animate(CurvedAnimation(parent: _checkAnim, curve: Curves.easeOut));
+
+    if (_done) _checkAnim.value = 1.0;
+  }
+
+  @override
+  void dispose() {
+    _checkAnim.dispose();
+    super.dispose();
+  }
+
+  void _usePrev() {
+    if (widget.data.prev == null) return;
+    HapticFeedback.selectionClick();
+    setState(() {
+      _weight = widget.data.prev!.weight;
+      _reps   = widget.data.prev!.reps;
+    });
+    widget.onWeightChanged?.call(_weight);
+    widget.onRepsChanged?.call(_reps);
+  }
+
+  void _showTypeMenu(BuildContext context) {
+    HapticFeedback.mediumImpact();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _SetTypeSheet(
+        currentType: widget.data.type,
+        onSelected: (type) {
+          Navigator.pop(context);
+          widget.onTypeChanged?.call(type);
+        },
+      ),
+    );
   }
 
   void _toggle() {
     final newDone = !_done;
-    // Stronger feedback when completing a set, lighter when unchecking
     if (newDone) {
       HapticFeedback.mediumImpact();
+      _checkAnim.forward(from: 0.0);
     } else {
-      HapticFeedback.lightImpact();
+      HapticFeedback.selectionClick();
+      _checkAnim.reverse();
     }
     setState(() => _done = newDone);
     widget.onComplete(newDone);
+  }
+
+  double? _estimate1RM() {
+    if (_weight <= 0 || _reps <= 1) return null;
+    return _weight * (1 + _reps / 30.0);
+  }
+
+  String _format1RM(double rm) {
+    if (PrefsService.unit == 'kg') {
+      final rounded = (rm * 2).round() / 2.0;
+      return rounded % 1 == 0 ? '${rounded.toInt()} kg' : '${rounded.toStringAsFixed(1)} kg';
+    } else {
+      return '${rm.round()} lb';
+    }
+  }
+
+  void _showPlateCalc(BuildContext context) {
+    HapticFeedback.selectionClick();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _PlateCalcSheet(targetWeight: _weight),
+    );
+  }
+
+  Widget _buildInfoRow(BuildContext context, AppColors c) {
+    final rm = _estimate1RM();
+    return Padding(
+      padding: const EdgeInsets.only(top: 5),
+      child: Row(
+        children: [
+          const SizedBox(width: 32),
+          Expanded(
+            child: rm != null
+                ? RichText(
+                    text: TextSpan(children: [
+                      TextSpan(
+                        text: 'Est. 1RM  ',
+                        style: TextStyle(
+                          fontSize: 10, color: c.textTertiary,
+                          fontFeatures: const [FontFeature.tabularFigures()]),
+                      ),
+                      TextSpan(
+                        text: _format1RM(rm),
+                        style: TextStyle(
+                          fontSize: 10, fontWeight: FontWeight.w600,
+                          color: c.textTertiary,
+                          fontFeatures: const [FontFeature.tabularFigures()]),
+                      ),
+                    ]),
+                  )
+                : const SizedBox.shrink(),
+          ),
+          GestureDetector(
+            onTap: () => _showPlateCalc(context),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.fitness_center_rounded,
+                    size: 11, color: c.textTertiary.withValues(alpha: 0.6)),
+                const SizedBox(width: 3),
+                Text(
+                  'Plates',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: c.textTertiary.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 44),
+        ],
+      ),
+    );
   }
 
   @override
@@ -106,208 +237,607 @@ class _SetRowState extends State<SetRow> {
       SetType.normal  => null,
     };
 
-    final badgeBg = switch (widget.data.type) {
-      SetType.warmup  => const Color(0xFF1A0F00),
-      SetType.drop    => null,
-      SetType.failure => null,
-      SetType.normal  => null,
-    };
+    final pr = widget.prWeight;
+    final overPR = !_done &&
+        pr != null && pr > 0 &&
+        _weight > pr * 1.2;
 
-    return Opacity(
-      opacity: _done ? 0.55 : 1.0,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          color: widget.isActive ? c.surfaceElevated : Colors.transparent,
-          border: Border(
-            left: BorderSide(
-              color: widget.isActive ? c.accentIron : Colors.transparent,
-              width: 3,
+    return AnimatedBuilder(
+      animation: _checkAnim,
+      builder: (context, child) {
+        // Flash overlay alpha peaks at start of animation
+        final flashAlpha = _done ? _rowFlash.value * 0.12 : 0.0;
+        return Opacity(
+          opacity: _done ? 0.85 : 1.0,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            color: _done
+                ? c.successLime.withValues(
+                    alpha: 0.04 + flashAlpha)
+                : overPR
+                    ? c.errorRose.withValues(alpha: 0.04)
+                    : Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: c.divider.withValues(alpha: 0.27), width: 1),
             ),
-            bottom: BorderSide(color: c.divider.withValues(alpha: 0.27), width: 1),
           ),
-        ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: 10,
-        ),
-        child: Row(
-          children: [
-            // Set number / badge
-            SizedBox(
-              width: 32,
-              child: Center(
-                child: badgeColor != null
-                    ? Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                        decoration: BoxDecoration(
-                          color:        badgeBg ?? badgeColor.withValues(alpha: 0.13),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          widget.data.type.name[0].toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 11, fontWeight: FontWeight.w700,
-                            color: badgeColor,
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md, 10, AppSpacing.md, 10),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Grid: 32px | 1fr | 80px | 80px | 44px
+              Row(
+                children: [
+                  // Set badge — 32px  long-press → type menu
+                  GestureDetector(
+                    onLongPress: () => _showTypeMenu(context),
+                    child: SizedBox(
+                    width: 32,
+                    child: Center(
+                      child: badgeColor != null
+                          ? Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: badgeColor.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                widget.data.type.name[0].toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 10, fontWeight: FontWeight.w800,
+                                  color: badgeColor,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              '${widget.data.index + 1}',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w700,
+                                color: _done ? c.successLime : c.textSecondary,
+                                fontFeatures: const [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                    ),
+                  ),
+                  ),
+
+                  // Previous — flex 1  tap → copy to steppers
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: widget.data.prev != null ? _usePrev : null,
+                      child: widget.data.prev != null
+                          ? RichText(
+                              overflow: TextOverflow.ellipsis,
+                              text: TextSpan(children: [
+                                TextSpan(
+                                  text: 'Last  ',
+                                  style: TextStyle(
+                                    fontSize: 10, color: c.textTertiary,
+                                    fontFeatures: const [FontFeature.tabularFigures()]),
+                                ),
+                                TextSpan(
+                                  text: () {
+                                    final pw = widget.data.prev!.weight;
+                                    final ws = pw % 1 == 0 ? '${pw.toInt()}' : pw.toStringAsFixed(1);
+                                    return '$ws${PrefsService.unit} × ${widget.data.prev!.reps}';
+                                  }(),
+                                  style: TextStyle(
+                                    fontSize: 11, fontWeight: FontWeight.w600,
+                                    color: c.textSecondary,
+                                    fontFeatures: const [FontFeature.tabularFigures()]),
+                                ),
+                              ]),
+                            )
+                          : Text('—',
+                              style: TextStyle(fontSize: 11, color: c.textTertiary)),
+                    ),
+                  ),
+
+                  // Weight stepper — 92px
+                  SizedBox(
+                    width: 92,
+                    child: _Stepper(
+                      value:     _weight,
+                      step:      PrefsService.unit != 'kg' ? 5.0 : 2.5,
+                      unit:      PrefsService.unit,
+                      textColor: _done
+                          ? c.successLime
+                          : overPR
+                              ? c.errorRose
+                              : c.textPrimary,
+                      borderColor: overPR ? c.errorRose.withValues(alpha: 0.5) : c.divider,
+                      surfaceColor: overPR
+                          ? c.errorRose.withValues(alpha: 0.08)
+                          : c.surface,
+                      onChanged: (v) {
+                        setState(() => _weight = v);
+                        widget.onWeightChanged?.call(v);
+                      },
+                    ),
+                  ),
+
+                  // Reps stepper — 92px
+                  SizedBox(
+                    width: 92,
+                    child: _Stepper(
+                      value:     _reps.toDouble(),
+                      step:      1,
+                      unit:      '',
+                      textColor: _done ? c.successLime : c.textPrimary,
+                      borderColor: c.divider,
+                      surfaceColor: c.surface,
+                      onChanged: (v) {
+                        setState(() => _reps = v.toInt());
+                        widget.onRepsChanged?.call(v.toInt());
+                      },
+                    ),
+                  ),
+
+                  // Check button — spring bounce animation
+                  GestureDetector(
+                    onTap: _toggle,
+                    child: SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: Center(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOut,
+                          width: 36, height: 36,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _done ? c.successLime : Colors.transparent,
+                            border: _done
+                                ? null
+                                : Border.all(color: c.divider, width: 1.5),
                           ),
+                          child: _done
+                              ? ScaleTransition(
+                                  scale: _checkScale,
+                                  child: const Icon(
+                                    Icons.check_rounded,
+                                    size: 17,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : null,
                         ),
-                      )
-                    : Text(
-                        '${widget.data.index + 1}',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w600,
-                          color: c.textTertiary,
-                        ),
-                      ),
-              ),
-            ),
-
-            const SizedBox(width: AppSpacing.xs),
-
-            // Previous
-            Expanded(
-              child: Text(
-                widget.data.prev != null
-                    ? '${widget.data.prev!.weight}×${widget.data.prev!.reps} ${PrefsService.unit}'
-                    : '—',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: c.textTertiary),
-              ),
-            ),
-
-            // Weight stepper
-            Expanded(child: _Stepper(
-              value:     _weight,
-              step:      PrefsService.unit != 'kg' ? 5.0 : 2.5,
-              textColor: _done ? c.successLime : c.textPrimary,
-              bgColor:   c.surfaceHigh,
-              onChanged: (v) {
-                setState(() => _weight = v);
-                widget.onWeightChanged?.call(v);
-              },
-            )),
-
-            // Reps stepper
-            Expanded(child: _Stepper(
-              value:     _reps.toDouble(),
-              step:      1,
-              textColor: _done ? c.successLime : c.textPrimary,
-              bgColor:   c.surfaceHigh,
-              onChanged: (v) {
-                setState(() => _reps = v.toInt());
-                widget.onRepsChanged?.call(v.toInt());
-              },
-            )),
-
-            // Checkbox
-            GestureDetector(
-              onTap: _toggle,
-              child: SizedBox(
-                width: AppTouchTarget.setCheckbox,
-                height: AppTouchTarget.setCheckbox,
-                child: Center(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 26, height: 26,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color:  _done ? c.successLime : Colors.transparent,
-                      border: Border.all(
-                        color: _done ? Colors.transparent : c.divider,
-                        width: 2,
                       ),
                     ),
-                    child: _done
-                        ? Icon(Icons.check, size: 14, color: c.ink)
-                        : null,
                   ),
-                ),
+                ],
               ),
-            ),
-          ],
+
+              // Info row: 1RM (left) + plate calc (right) — shown when weight > 0
+              if (_weight > 0) _buildInfoRow(context, c),
+            ],
+          ),
         ),
       ),
     );
+  },
+  );
   }
 }
 
+// Stepper: height 44, 0.5px border, rxs corners, ±32px buttons
 class _Stepper extends StatelessWidget {
   const _Stepper({
     required this.value,
     required this.step,
+    required this.unit,
     required this.textColor,
-    required this.bgColor,
+    required this.borderColor,
+    required this.surfaceColor,
     required this.onChanged,
   });
 
   final double   value;
   final double   step;
+  final String   unit;
   final Color    textColor;
-  final Color    bgColor;
+  final Color    borderColor;
+  final Color    surfaceColor;
   final void Function(double) onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _StepButton(
-          icon: '−',
-          size: 32,
-          bg: bgColor,
-          onTap: () => onChanged((value - step).clamp(0, double.infinity)),
-        ),
-        SizedBox(
-          width: 40,
-          child: Text(
-            value % 1 == 0 ? '${value.toInt()}' : '$value',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 15, fontWeight: FontWeight.w700,
-              color: textColor,
-              fontFeatures: const [FontFeature.tabularFigures()],
+    final c = Theme.of(context).extension<AppColors>()!;
+    return Container(
+      height: 44,
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        border: Border.all(color: borderColor, width: 0.5),
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => onChanged((value - step).clamp(0, double.infinity)),
+            child: SizedBox(
+              width: 32, height: 44,
+              child: Center(
+                child: Text(
+                  '−',
+                  style: TextStyle(fontSize: 18, color: c.textSecondary),
+                ),
+              ),
             ),
           ),
-        ),
-        _StepButton(
-          icon: '+',
-          size: 32,
-          bg: bgColor,
-          onTap: () => onChanged(value + step),
-        ),
-      ],
+          Expanded(
+            child: unit.isEmpty
+                ? Text(
+                    value % 1 == 0 ? '${value.toInt()}' : '$value',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w700,
+                      color: textColor,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  )
+                : RichText(
+                    textAlign: TextAlign.center,
+                    text: TextSpan(children: [
+                      TextSpan(
+                        text: value % 1 == 0 ? '${value.toInt()}' : value.toStringAsFixed(1),
+                        style: TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w700,
+                          color: textColor,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                      TextSpan(
+                        text: unit,
+                        style: TextStyle(
+                          fontSize: 9, fontWeight: FontWeight.w500,
+                          color: borderColor,
+                        ),
+                      ),
+                    ]),
+                  ),
+          ),
+          GestureDetector(
+            onTap: () => onChanged(value + step),
+            child: SizedBox(
+              width: 32, height: 44,
+              child: Center(
+                child: Text(
+                  '+',
+                  style: TextStyle(fontSize: 18, color: c.textSecondary),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _StepButton extends StatelessWidget {
-  const _StepButton({
-    required this.icon,
-    required this.size,
-    required this.bg,
-    required this.onTap,
+// ── Set Type Bottom Sheet ─────────────────────────────────────
+class _SetTypeSheet extends StatelessWidget {
+  const _SetTypeSheet({
+    required this.currentType,
+    required this.onSelected,
   });
-  final String icon;
-  final double size;
-  final Color  bg;
-  final VoidCallback onTap;
+  final SetType currentType;
+  final void Function(SetType) onSelected;
+
+  static const _items = [
+    (type: SetType.normal,  label: 'Normal',    icon: Icons.radio_button_unchecked_rounded, desc: 'Standard working set'),
+    (type: SetType.warmup,  label: 'Warm-up',   icon: Icons.whatshot_rounded,               desc: 'Light weight, higher reps'),
+    (type: SetType.drop,    label: 'Drop Set',  icon: Icons.arrow_downward_rounded,         desc: 'Reduce weight, no rest'),
+    (type: SetType.failure, label: 'To Failure',icon: Icons.local_fire_department_rounded,  desc: 'Push to maximum'),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final c = Theme.of(context).extension<AppColors>()!;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: size, height: size,
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: Center(
-          child: Text(icon,
-            style: TextStyle(fontSize: 18, color: c.textSecondary)),
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: c.surfaceElevated,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.md, 0, AppSpacing.md,
+        MediaQuery.of(context).padding.bottom + AppSpacing.md),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 16),
+            width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: c.divider,
+              borderRadius: BorderRadius.circular(AppRadius.full),
+            ),
+          ),
+          Text(
+            'Set Type',
+            style: AppTypography.titleM(c.textPrimary).copyWith(
+              fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: -0.2),
+          ),
+          const SizedBox(height: 16),
+          ..._items.map((item) {
+            final isActive = item.type == currentType;
+            return GestureDetector(
+              onTap: () => onSelected(item.type),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? c.accentIron.withValues(alpha: 0.08)
+                      : c.surfaceHigh,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(
+                    color: isActive
+                        ? c.accentIron.withValues(alpha: 0.4)
+                        : c.divider.withValues(alpha: 0.5),
+                    width: isActive ? 1.0 : 0.5,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(item.icon,
+                      size: 20,
+                      color: isActive ? c.accentIron : c.textSecondary),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.label,
+                            style: AppTypography.titleS(
+                              isActive ? c.accentIron : c.textPrimary,
+                            ).copyWith(
+                              fontSize: 14, fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            item.desc,
+                            style: AppTypography.caption(c.textTertiary).copyWith(
+                              fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (isActive)
+                      Icon(Icons.check_circle_rounded,
+                        size: 18, color: c.accentIron),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Plate Calculator Bottom Sheet ─────────────────────────────
+class _PlateCalcSheet extends StatefulWidget {
+  const _PlateCalcSheet({required this.targetWeight});
+  final double targetWeight;
+
+  @override
+  State<_PlateCalcSheet> createState() => _PlateCalcSheetState();
+}
+
+class _PlateCalcSheetState extends State<_PlateCalcSheet> {
+  static const _kgBars   = [20.0, 15.0];
+  static const _lbBars   = [45.0, 35.0];
+  static const _kgPlates = [25.0, 20.0, 15.0, 10.0, 5.0, 2.5, 1.25];
+  static const _lbPlates = [45.0, 35.0, 25.0, 10.0, 5.0, 2.5];
+
+  late double _bar;
+  late final bool _isLbs;
+
+  @override
+  void initState() {
+    super.initState();
+    _isLbs = PrefsService.unit != 'kg';
+    _bar = _isLbs ? 45.0 : 20.0;
+  }
+
+  List<({double plate, int count})> _calcPlates() {
+    final available = _isLbs ? _lbPlates : _kgPlates;
+    double remaining = (widget.targetWeight - _bar) / 2.0;
+    final result = <({double plate, int count})>[];
+    if (remaining <= 0) return result;
+    for (final p in available) {
+      if (remaining < 0.01) break;
+      final count = (remaining / p).floor();
+      if (count > 0) {
+        result.add((plate: p, count: count));
+        remaining -= count * p;
+      }
+    }
+    return result;
+  }
+
+  double _loadedWeight(List<({double plate, int count})> plates) {
+    final perSide = plates.fold(0.0, (s, e) => s + e.plate * e.count);
+    return _bar + perSide * 2;
+  }
+
+  String _fmt(double v) {
+    if (v % 1 == 0) return '${v.toInt()}';
+    final s = v.toStringAsFixed(2);
+    return s.endsWith('0') ? s.substring(0, s.length - 1) : s;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).extension<AppColors>()!;
+    final unit = PrefsService.unit;
+    final bars = _isLbs ? _lbBars : _kgBars;
+    final plates = _calcPlates();
+    final loaded = _loadedWeight(plates);
+    final hasRounding = (loaded - widget.targetWeight).abs() > 0.05;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: c.surfaceElevated,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.md, 0, AppSpacing.md,
+        MediaQuery.of(context).padding.bottom + AppSpacing.md),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 16),
+            width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: c.divider,
+              borderRadius: BorderRadius.circular(AppRadius.full),
+            ),
+          ),
+          // Title + target weight
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Plate Calculator',
+                  style: AppTypography.titleM(c.textPrimary).copyWith(
+                    fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: -0.2),
+                ),
+              ),
+              Text(
+                '${_fmt(widget.targetWeight)} $unit',
+                style: AppTypography.bodyM(c.textSecondary).copyWith(
+                  fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Bar selector
+          Row(
+            children: List.generate(bars.length, (i) {
+              final b = bars[i];
+              final isSelected = b == _bar;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _bar = b),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    margin: EdgeInsets.only(right: i < bars.length - 1 ? 8 : 0),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? c.accentIron.withValues(alpha: 0.08)
+                          : c.surfaceHigh,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      border: Border.all(
+                        color: isSelected
+                            ? c.accentIron.withValues(alpha: 0.4)
+                            : c.divider.withValues(alpha: 0.5),
+                        width: isSelected ? 1.0 : 0.5,
+                      ),
+                    ),
+                    child: Text(
+                      '${_fmt(b)} $unit bar',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w600,
+                        color: isSelected ? c.accentIron : c.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 16),
+          // Plate breakdown or Bar only state
+          if (plates.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Column(
+                children: [
+                  Icon(Icons.fitness_center_rounded, size: 28, color: c.textTertiary),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Bar only',
+                    style: AppTypography.bodyM(c.textSecondary).copyWith(
+                      fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                  if (widget.targetWeight < _bar) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Target is below bar weight',
+                      style: AppTypography.caption(c.textTertiary).copyWith(fontSize: 11),
+                    ),
+                  ],
+                ],
+              ),
+            )
+          else ...[
+            // Per-side header + rounding notice
+            Row(
+              children: [
+                Text(
+                  'Per side',
+                  style: AppTypography.caption(c.textTertiary).copyWith(fontSize: 11),
+                ),
+                if (hasRounding) ...[
+                  const Spacer(),
+                  Text(
+                    'Loads ${_fmt(loaded)} $unit',
+                    style: AppTypography.caption(c.warningAmber).copyWith(
+                      fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 8),
+            ...plates.map((entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: c.surfaceHigh,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      border: Border.all(
+                        color: c.divider.withValues(alpha: 0.5), width: 0.5),
+                    ),
+                    child: Text(
+                      '${_fmt(entry.plate)} $unit',
+                      style: TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w700,
+                        color: c.textPrimary,
+                        fontFeatures: const [FontFeature.tabularFigures()]),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    '× ${entry.count}',
+                    style: TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w600,
+                      color: c.textSecondary,
+                      fontFeatures: const [FontFeature.tabularFigures()]),
+                  ),
+                ],
+              ),
+            )),
+          ],
+          const SizedBox(height: 4),
+        ],
       ),
     );
   }

@@ -8,7 +8,8 @@ import '../widgets/set_row.dart';
 import '../models/routine.dart';
 import '../services/routine_store.dart';
 import '../utils/weight_unit.dart';
-import 'active_workout_screen.dart' show WorkoutExercise, ExercisePickerSheet;
+import '../models/workout.dart' show WorkoutExercise;
+import 'active_workout_screen.dart' show ExercisePickerSheet;
 
 const _palette = [
   Color(0xFFD97706), Color(0xFF3B82F6), Color(0xFF10B981),
@@ -63,6 +64,29 @@ class _RoutineEditorScreenState extends State<RoutineEditorScreen> {
       );
       return;
     }
+    if (_exercises.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('Add at least one exercise to save'),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm)),
+      ));
+      return;
+    }
+    final isDuplicate = RoutineStore.routines.value.any((r) =>
+        r.name.toLowerCase() == name.toLowerCase() &&
+        r.id != (widget.existing?.id ?? ''));
+    if (isDuplicate) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('A routine named "$name" already exists'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.sm)),
+        ),
+      );
+      return;
+    }
     final routine = Routine(
       id: widget.existing?.id ??
           'custom-${DateTime.now().millisecondsSinceEpoch}',
@@ -85,16 +109,16 @@ class _RoutineEditorScreenState extends State<RoutineEditorScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => ExercisePickerSheet(
-        onSelect: (ex) {
+        onAdd: (list) {
           Navigator.of(context).pop();
-          setState(() => _exercises.add(ex));
+          setState(() => _exercises.addAll(list));
         },
       ),
     );
   }
 
   void _removeExercise(int idx) {
-    HapticFeedback.lightImpact();
+    HapticFeedback.mediumImpact();
     setState(() => _exercises.removeAt(idx));
   }
 
@@ -408,13 +432,13 @@ class _ExerciseItem extends StatelessWidget {
               onTap: onDelete,
               child: Padding(
                 padding: const EdgeInsets.all(8),
-                child: Icon(Icons.delete_outline,
+                child: Icon(Icons.delete_outline_rounded,
                     color: c.errorRose, size: 20),
               ),
             ),
             Padding(
               padding: const EdgeInsets.all(8),
-              child: Icon(Icons.drag_handle,
+              child: Icon(Icons.drag_handle_rounded,
                   color: c.textTertiary, size: 20),
             ),
           ],
@@ -532,7 +556,7 @@ class _EditSetsSheetState extends State<_EditSetsSheet> {
       decoration: BoxDecoration(
         color: c.surfaceElevated,
         borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(20)),
+            const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       child: Column(
         children: [
@@ -632,7 +656,7 @@ class _EditSetsSheetState extends State<_EditSetsSheet> {
                               decoration: BoxDecoration(
                                 color:
                                     typeColor.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: BorderRadius.circular(AppRadius.xs),
                               ),
                               child: Center(
                                 child: Text(typeLabel,
@@ -661,7 +685,7 @@ class _EditSetsSheetState extends State<_EditSetsSheet> {
                         child: Center(
                           child: GestureDetector(
                             onTap: () => _removeSet(i),
-                            child: Icon(Icons.remove_circle_outline,
+                            child: Icon(Icons.remove_circle_outline_rounded,
                                 color: c.errorRose, size: 20),
                           ),
                         ),

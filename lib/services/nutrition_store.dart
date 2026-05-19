@@ -103,6 +103,13 @@ class NutritionStore {
     }
   }
 
+  static Future<void> clearAll() async {
+    entries.value = [];
+    targets.value = const NutritionTargets();
+    await _persistToday();
+    await PrefsService.saveNutritionTargets(jsonEncode(const NutritionTargets().toJson()));
+  }
+
   static Future<void> addEntry(FoodEntry e) async {
     entries.value = [...entries.value, e];
     await _persistToday();

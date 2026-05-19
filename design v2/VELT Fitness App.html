@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VELT — Premium Fitness Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box; margin: 0; padding: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    html, body {
+      background: #050505;
+      min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    ::-webkit-scrollbar { display: none; }
+    * { scrollbar-width: none; }
+
+    button { font-family: inherit; }
+    input { font-family: inherit; }
+
+    /* Animations */
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideDown {
+      from { transform: translateY(-12px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes slideUp {
+      from { transform: translateY(40px); }
+      to   { transform: translateY(0); }
+    }
+    @keyframes confettiBurst {
+      0% {
+        opacity: 1;
+        transform: translate(0, 0) rotate(0deg) scale(0.6);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(var(--dx), var(--dy)) rotate(720deg) scale(1);
+      }
+    }
+
+    #phone-root {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-origin: center center;
+    }
+    @media (max-height: 900px) {
+      #phone-root { transform: scale(calc(100vh / 880)); }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="phone-root"></div>
+
+  <!-- 1. Tokens -->
+  <script src="velt/tokens.js"></script>
+
+  <!-- 2. iOS frame -->
+  <script type="text/babel" src="ios-frame.jsx"></script>
+
+  <!-- 3. Shared components -->
+  <script type="text/babel" src="velt/components.jsx"></script>
+
+  <!-- 4. Screens -->
+  <script type="text/babel" src="velt/onboarding.jsx"></script>
+  <script type="text/babel" src="velt/home.jsx"></script>
+  <script type="text/babel" src="velt/train.jsx"></script>
+  <script type="text/babel" src="velt/workout.jsx"></script>
+  <script type="text/babel" src="velt/complete.jsx"></script>
+  <script type="text/babel" src="velt/nutrition.jsx"></script>
+  <script type="text/babel" src="velt/progress.jsx"></script>
+  <script type="text/babel" src="velt/details.jsx"></script>
+  <script type="text/babel" src="velt/theme-sheet.jsx"></script>
+  <script type="text/babel" src="velt/settings.jsx"></script>
+
+  <!-- 5. App shell -->
+  <script type="text/babel" src="velt/app.jsx"></script>
+
+  <!-- 6. Mount -->
+  <script type="text/babel">
+    function Root() {
+      return (
+        <IOSDevice dark={true} width={390} height={844}>
+          <VeltApp />
+        </IOSDevice>
+      );
+    }
+    const root = ReactDOM.createRoot(document.getElementById('phone-root'));
+    root.render(<Root />);
+  </script>
+
+</body>
+</html>
