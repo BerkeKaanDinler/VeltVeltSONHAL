@@ -1,0 +1,55 @@
+# VELT Android — Fastlane
+#
+# Run from project root:
+#   cd android && bundle exec fastlane internal
+#   cd android && bundle exec fastlane production
+#
+# Requirements (one-time):
+#   gem install bundler
+#   cd android && bundle init && bundle add fastlane
+#
+# Env vars:
+#   SUPPLY_JSON_KEY                    Path to Play Console service-account JSON
+#   SENTRY_DSN, SUPABASE_*, REVENUECAT_GOOGLE_KEY — passed to --dart-define
+
+default_platform(:android)
+
+platform :android do
+  desc "Build & upload AAB to Play Internal Testing"
+  lane :internal do
+    sh(
+      "cd ../.. && flutter build appbundle --release " \
+        "--dart-define=SENTRY_DSN=#{ENV['SENTRY_DSN'] || ''} " \
+        "--dart-define=SUPABASE_URL=#{ENV['SUPABASE_URL'] || ''} " \
+        "--dart-define=SUPABASE_ANON_KEY=#{ENV['SUPABASE_ANON_KEY'] || ''} " \
+        "--dart-define=REVENUECAT_GOOGLE_KEY=#{ENV['REVENUECAT_GOOGLE_KEY'] || ''}"
+    )
+
+    upload_to_play_store(
+      package_name: "com.veltfitness.app",
+      track: "internal",
+      aab: "../build/app/outputs/bundle/release/app-release.aab",
+      json_key: ENV["SUPPLY_JSON_KEY"],
+      release_status: "draft",
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+    )
+  end
+
+  desc "Promote internal build to production (manual review still required)"
+  lane :production do
+    upload_to_play_store(
+      package_name: "com.veltfitness.app",
+      track_promote_to: "production",
+      track: "internal",
+      json_key: ENV["SUPPLY_JSON_KEY"],
+      release_status: "draft",
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: false,
+      metadata_path: "./fastlane/metadata/android",
+    )
+  end
+end

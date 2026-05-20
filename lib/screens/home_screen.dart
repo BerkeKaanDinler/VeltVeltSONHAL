@@ -10,6 +10,7 @@ import '../services/prefs_service.dart';
 import '../models/routine.dart';
 import '../services/routine_store.dart';
 import '../services/workout_history_store.dart';
+import '../services/nutrition_store.dart';
 import '../utils/weight_unit.dart';
 import '../utils/home_helpers.dart';
 import '../models/workout.dart' show WorkoutExercise, CompletedWorkout;
@@ -206,6 +207,11 @@ class _FreshHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = Theme.of(context).extension<AppColors>()!;
     return VeltScreen(
+      onRefresh: () async {
+        await WorkoutHistoryStore.init();
+        await NutritionStore.init();
+        HapticFeedback.lightImpact();
+      },
       child: ValueListenableBuilder<List<CompletedWorkout>>(
         valueListenable: WorkoutHistoryStore.history,
         builder: (context, history, _) {
@@ -405,21 +411,66 @@ class _FreshHomeScreen extends StatelessWidget {
                     trailing: VeltPill(last == null ? 'Empty' : 'View'),
                   ),
                   if (last == null)
-                    VeltPanel(
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            c.surfaceElevated,
+                            c.accentIron.withValues(alpha: .14),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        border: Border.all(color: c.divider),
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const VeltLabel('No sessions yet'),
-                          const SizedBox(height: 6),
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: c.accentIron.withValues(alpha: .16),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            alignment: Alignment.center,
+                            child: Icon(
+                              Icons.rocket_launch_rounded,
+                              color: c.accentIron,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
                           Text(
-                            'Start your first workout to build history.',
+                            'Day one — let\'s go.',
                             style: TextStyle(
                               fontFamily: 'Inter',
                               color: c.textPrimary,
-                              fontSize: 17,
+                              fontSize: 26,
+                              height: 1.05,
                               fontWeight: FontWeight.w900,
-                              letterSpacing: 0,
+                              letterSpacing: -0.5,
                             ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Start your first workout — VELT remembers every '
+                            'set, every PR, every minute from here on.',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              color: c.textSecondary,
+                              fontSize: 13,
+                              height: 1.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          VeltButton(
+                            label: 'Start your first workout',
+                            onTap: () =>
+                                onStartWorkout('Empty Workout', null),
                           ),
                         ],
                       ),

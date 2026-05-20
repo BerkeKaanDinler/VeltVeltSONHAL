@@ -152,34 +152,13 @@ class _PaywallScreenState extends State<PaywallScreen> {
               if (!ProService.isConfigured)
                 _OfflinePlaceholder(c: c)
               else if (offerings.isEmpty)
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: c.surfaceElevated,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(color: c.divider),
-                  ),
-                  child: Center(
-                    child: Column(
-                      children: [
-                        const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Loading plans…',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            color: c.textSecondary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                Column(
+                  children: [
+                    for (int i = 0; i < 3; i++) ...[
+                      _PlanSkeleton(c: c),
+                      const SizedBox(height: 8),
+                    ],
+                  ],
                 )
               else
                 for (int i = 0; i < offerings.length; i++) ...[
@@ -480,6 +459,98 @@ class _PlanCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PlanSkeleton extends StatefulWidget {
+  const _PlanSkeleton({required this.c});
+  final AppColors c;
+  @override
+  State<_PlanSkeleton> createState() => _PlanSkeletonState();
+}
+
+class _PlanSkeletonState extends State<_PlanSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.c;
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) {
+        final t = _ctrl.value;
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: c.surfaceElevated,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: c.divider),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: c.surfaceHigh.withValues(alpha: .6 + .4 * t),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      height: 14,
+                      width: 100,
+                      decoration: BoxDecoration(
+                        color: c.surfaceHigh.withValues(alpha: .6 + .4 * t),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      height: 11,
+                      width: 160,
+                      decoration: BoxDecoration(
+                        color: c.surfaceHigh.withValues(alpha: .4 + .4 * t),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                height: 16,
+                width: 60,
+                decoration: BoxDecoration(
+                  color: c.surfaceHigh.withValues(alpha: .6 + .4 * t),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

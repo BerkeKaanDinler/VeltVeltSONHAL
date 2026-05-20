@@ -242,6 +242,10 @@ class _FreshProgressScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return VeltScreen(
+      onRefresh: () async {
+        await WorkoutHistoryStore.init();
+        HapticFeedback.lightImpact();
+      },
       child: ValueListenableBuilder<List<CompletedWorkout>>(
         valueListenable: WorkoutHistoryStore.history,
         builder: (context, history, _) {

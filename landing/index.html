@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>VELT — Workout Tracker &amp; AI Coach</title>
+<meta name="description" content="Premium workout tracker for serious lifters. 90+ exercises, 10 programs, plate calculator, AI coach insights. Start your 7-day free trial." />
+<meta property="og:title" content="VELT — Workout Tracker &amp; AI Coach" />
+<meta property="og:description" content="Premium workout tracker for serious lifters. 90+ exercises, 10 programs, AI coach insights." />
+<meta property="og:image" content="https://veltfitness.com/og.png" />
+<meta name="theme-color" content="#0F0F0F" />
+<link rel="icon" href="favicon.png" />
+
+<style>
+  :root {
+    --ink: #0F0F0F;
+    --surface: #0F0F0F;
+    --elevated: #1A1A1A;
+    --high: #242424;
+    --divider: #2A2A2A;
+    --text-primary: #FFFFFF;
+    --text-secondary: #A0A0A0;
+    --text-tertiary: #6B6B6B;
+    --accent: #D97706;
+    --success: #22C55E;
+    --rose: #EF4444;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Container */
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+  /* Nav */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(20px);
+    background: rgba(15, 15, 15, 0.78);
+    border-bottom: 1px solid var(--divider);
+  }
+  nav .row {
+    display: flex;
+    align-items: center;
+    height: 64px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 900;
+    font-size: 18px;
+    letter-spacing: 1.5px;
+    color: var(--text-primary);
+  }
+  .brand-mark {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #000;
+    display: grid;
+    place-items: center;
+    font-weight: 900;
+    font-size: 16px;
+    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.4);
+  }
+  nav .spacer { flex: 1; }
+  nav .links { display: flex; gap: 22px; }
+  nav .links a {
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  nav .links a:hover { color: var(--text-primary); text-decoration: none; }
+  nav .cta {
+    background: var(--accent);
+    color: #000;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 900;
+    margin-left: 22px;
+  }
+
+  /* Hero */
+  .hero {
+    padding: 80px 0 60px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 50% 50% at 80% 20%, rgba(217, 119, 6, 0.18), transparent 70%);
+    pointer-events: none;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 60px;
+    align-items: center;
+    position: relative;
+  }
+  @media (max-width: 800px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 30px; }
+  }
+  .eyebrow {
+    color: var(--accent);
+    font-weight: 900;
+    font-size: 11px;
+    letter-spacing: 2.4px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-size: clamp(40px, 7vw, 64px);
+    font-weight: 900;
+    letter-spacing: -2px;
+    line-height: 0.98;
+    margin: 0 0 22px;
+  }
+  .lead {
+    font-size: 18px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    margin-bottom: 32px;
+    max-width: 520px;
+  }
+  .badges {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 18px;
+    background: var(--elevated);
+    border-radius: 12px;
+    border: 1px solid var(--divider);
+    color: var(--text-primary);
+    font-weight: 800;
+    font-size: 13px;
+    transition: transform .15s, border-color .15s;
+  }
+  .badge:hover {
+    transform: translateY(-1px);
+    border-color: var(--accent);
+    text-decoration: none;
+  }
+  .badge .icon { font-size: 24px; }
+  .badge small {
+    display: block;
+    color: var(--text-tertiary);
+    font-size: 9.5px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+    font-weight: 900;
+  }
+
+  /* Phone mock */
+  .phone {
+    width: 280px;
+    height: 580px;
+    border-radius: 38px;
+    background: var(--elevated);
+    border: 8px solid #1a1a1a;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--divider);
+    margin: 0 auto;
+    overflow: hidden;
+    position: relative;
+  }
+  .phone::before {
+    content: "";
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 28px;
+    background: #000;
+    border-radius: 999px;
+    z-index: 2;
+  }
+  .phone-screen {
+    background: linear-gradient(160deg, #1A1A1A 0%, #0F0F0F 70%);
+    height: 100%;
+    padding: 56px 18px 24px;
+    color: var(--text-primary);
+  }
+  .phone-screen .ph-eyebrow {
+    color: var(--accent);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .phone-screen .ph-title {
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+  .ph-card {
+    background: var(--high);
+    border: 1px solid var(--divider);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  .ph-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 6px 0;
+  }
+  .ph-row .lbl {
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+  }
+  .ph-row .val {
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+  }
+  .ph-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .ph-stat {
+    background: var(--elevated);
+    border: 1px solid var(--divider);
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+  }
+  .ph-stat .v {
+    font-size: 15px;
+    font-weight: 900;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+  .ph-stat .l {
+    font-size: 8px;
+    color: var(--text-tertiary);
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .ph-btn {
+    height: 38px;
+    background: var(--accent);
+    color: #000;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    font-weight: 900;
+    font-size: 12px;
+    margin-top: 8px;
+    box-shadow: 0 8px 20px rgba(217, 119, 6, 0.4);
+  }
+
+  /* Feature grid */
+  section.features {
+    padding: 80px 0;
+    background: var(--elevated);
+    border-top: 1px solid var(--divider);
+    border-bottom: 1px solid var(--divider);
+  }
+  .section-head {
+    text-align: center;
+    margin-bottom: 50px;
+  }
+  .section-head .eyebrow { text-align: center; }
+  .section-head h2 {
+    font-size: clamp(30px, 4vw, 42px);
+    font-weight: 900;
+    letter-spacing: -1px;
+    margin: 0;
+  }
+  .section-head p {
+    color: var(--text-secondary);
+    font-size: 16px;
+    max-width: 540px;
+    margin: 12px auto 0;
+  }
+  .feat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 800px) { .feat-grid { grid-template-columns: 1fr; } }
+  .feat {
+    background: var(--surface);
+    border: 1px solid var(--divider);
+    border-radius: 16px;
+    padding: 22px;
+    transition: border-color .15s, transform .15s;
+  }
+  .feat:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .feat .ic {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(217, 119, 6, 0.16);
+    color: var(--accent);
+    display: grid;
+    place-items: center;
+    font-size: 20px;
+    margin-bottom: 14px;
+  }
+  .feat h3 {
+    font-size: 17px;
+    font-weight: 900;
+    margin: 0 0 6px;
+    letter-spacing: -0.3px;
+  }
+  .feat p {
+    color: var(--text-secondary);
+    font-size: 13.5px;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  /* Pricing */
+  section.pricing {
+    padding: 80px 0;
+  }
+  .price-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    max-width: 880px;
+    margin: 0 auto;
+  }
+  @media (max-width: 800px) { .price-grid { grid-template-columns: 1fr; } }
+  .price {
+    background: var(--elevated);
+    border: 1px solid var(--divider);
+    border-radius: 16px;
+    padding: 26px;
+    position: relative;
+  }
+  .price.featured {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent), 0 30px 60px rgba(217, 119, 6, 0.15);
+  }
+  .price .ribbon {
+    position: absolute;
+    top: -12px;
+    left: 26px;
+    background: var(--success);
+    color: #000;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 1px;
+  }
+  .price h3 {
+    font-size: 14px;
+    font-weight: 900;
+    color: var(--text-secondary);
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    margin: 0 0 8px;
+  }
+  .price .amt {
+    font-size: 38px;
+    font-weight: 900;
+    letter-spacing: -1.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  .price .amt small {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-tertiary);
+    margin-left: 4px;
+  }
+  .price .sub {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin: 6px 0 18px;
+  }
+  .price ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 22px;
+    color: var(--text-primary);
+    font-size: 13.5px;
+  }
+  .price li {
+    padding: 5px 0 5px 22px;
+    position: relative;
+  }
+  .price li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    top: 5px;
+    color: var(--success);
+    font-weight: 900;
+  }
+  .price .cta {
+    display: block;
+    text-align: center;
+    background: var(--high);
+    color: var(--text-primary);
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: 900;
+    font-size: 13.5px;
+  }
+  .price.featured .cta {
+    background: var(--accent);
+    color: #000;
+  }
+
+  /* Footer */
+  footer {
+    padding: 50px 0 36px;
+    border-top: 1px solid var(--divider);
+    color: var(--text-tertiary);
+    font-size: 12px;
+  }
+  footer .cols {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 40px;
+    margin-bottom: 36px;
+  }
+  @media (max-width: 800px) { footer .cols { grid-template-columns: 1fr; } }
+  footer h4 {
+    color: var(--text-primary);
+    font-size: 11px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    margin: 0 0 14px;
+    font-weight: 900;
+  }
+  footer .link {
+    display: block;
+    color: var(--text-secondary);
+    padding: 4px 0;
+    font-size: 13px;
+  }
+  footer .link:hover { color: var(--text-primary); text-decoration: none; }
+  footer .legal {
+    text-align: center;
+    border-top: 1px solid var(--divider);
+    padding-top: 20px;
+  }
+
+  /* Founder note */
+  .founder {
+    background: var(--elevated);
+    border: 1px solid var(--divider);
+    border-left: 4px solid var(--accent);
+    border-radius: 16px;
+    padding: 24px;
+    margin: 60px auto;
+    max-width: 700px;
+  }
+  .founder .label {
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .founder p {
+    color: var(--text-primary);
+    font-size: 15px;
+    line-height: 1.65;
+    margin: 0 0 14px;
+  }
+  .founder .sig {
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="row">
+      <a href="#" class="brand">
+        <span class="brand-mark">V</span>
+        VELT
+      </a>
+      <div class="spacer"></div>
+      <div class="links">
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#support">Support</a>
+      </div>
+      <a href="#download" class="cta">Download</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">Workout Tracker · AI Coach</div>
+      <h1>Lift smarter.<br />Track every PR.</h1>
+      <p class="lead">
+        A premium fitness app built for people who actually train. 90+ exercises,
+        10 programs, plate calculator, supersets, RPE, and an AI coach that
+        finds your plateaus before you do.
+      </p>
+      <div class="badges" id="download">
+        <a class="badge" href="#" aria-label="Download on the App Store">
+          <span class="icon">🍎</span>
+          <span><small>Download on the</small>App Store</span>
+        </a>
+        <a class="badge" href="#" aria-label="Get it on Google Play">
+          <span class="icon">▶</span>
+          <span><small>Get it on</small>Google Play</span>
+        </a>
+      </div>
+    </div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="ph-eyebrow">Today's plan</div>
+        <div class="ph-title">Push A is ready.</div>
+        <div class="ph-card">
+          <div class="ph-row">
+            <span class="lbl">Bench press</span>
+            <span class="val">80 × 8</span>
+          </div>
+          <div class="ph-row">
+            <span class="lbl">Last session</span>
+            <span class="val" style="color: var(--success); font-size: 13px;">PR +2.5</span>
+          </div>
+        </div>
+        <div class="ph-stats">
+          <div class="ph-stat"><div class="v">6</div><div class="l">Exercises</div></div>
+          <div class="ph-stat"><div class="v">48</div><div class="l">Minutes</div></div>
+          <div class="ph-stat"><div class="v">19</div><div class="l">Sets</div></div>
+        </div>
+        <div class="ph-btn">Start workout</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">What's inside</div>
+      <h2>Built for the serious lifter.</h2>
+      <p>Every detail tuned so logging a set is faster than typing into Notes — and your data turns into actual insight.</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat">
+        <div class="ic">💪</div>
+        <h3>90+ Exercises</h3>
+        <p>Form cues and coach tips for every movement. Filter by muscle, equipment, or difficulty. Quick-start any exercise as a single-move session.</p>
+      </div>
+      <div class="feat">
+        <div class="ic">📋</div>
+        <h3>10 Prebuilt Programs</h3>
+        <p>PPL, StrongLifts 5×5, 5/3/1, U/L, GZCLP, nSuns, and more. One tap to add — VELT preserves weights and PRs across sessions.</p>
+      </div>
+      <div class="feat">
+        <div class="ic">⏱</div>
+        <h3>Rest Timer with Auto-Start</h3>
+        <p>Mark a set done — timer fires instantly. Background notifications keep you on time even when the phone is in your pocket.</p>
+      </div>
+      <div class="feat">
+        <div class="ic">🏋️</div>
+        <h3>Plate Calculator</h3>
+        <p>Tell VELT the bar weight — get the plate breakdown per side. Color-coded, IPF-correct, works in kg or lb.</p>
+      </div>
+      <div class="feat">
+        <div class="ic">🔗</div>
+        <h3>Supersets &amp; RPE</h3>
+        <p>Group exercises A1/A2 with one tap. Log RPE/RIR per set (optional). Track exactly what Hevy and Strong let you track — and more.</p>
+      </div>
+      <div class="feat">
+        <div class="ic">🎯</div>
+        <h3>Personal Record Tracking</h3>
+        <p>VELT remembers every PR across your history. Hit one mid-session? Confetti, haptic, and a celebration overlay.</p>
+      </div>
+      <div class="feat">
+        <div class="ic">📊</div>
+        <h3>Progress That Means Something</h3>
+        <p>Weekly/monthly/yearly volume. Muscle group balance heatmap. Bodyweight trend. Period-over-period delta.</p>
+      </div>
+      <div class="feat">
+        <div class="ic">🥗</div>
+        <h3>Nutrition Without the Spam</h3>
+        <p>Water tracker, quick-log carousel, live macros vs target. No ads, no shopping links, no weight-loss BS.</p>
+      </div>
+      <div class="feat">
+        <div class="ic">🧠</div>
+        <h3>AI Coach (Pro)</h3>
+        <p>Plateau alerts, deload timing, weekly meal plans tuned to your goals. Available with VELT Pro.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOUNDER NOTE -->
+<div class="wrap">
+  <div class="founder">
+    <div class="label">From the founder</div>
+    <p>
+      I built VELT because every other fitness app either forces me into their workouts, drowns me in social ads, or sells my data. I wanted a tool that just lets me lift and remembers everything I did last time. No bullshit, no upsells in the middle of a set.
+    </p>
+    <p>
+      If something's broken or missing, email me directly. I read every message and ship updates every two weeks.
+    </p>
+    <div class="sig">— Berke, founder</div>
+  </div>
+</div>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">VELT Pro</div>
+      <h2>Simple, fair pricing.</h2>
+      <p>Try VELT free, upgrade only when you want the AI coach. Cancel anytime in your App Store or Play account.</p>
+    </div>
+    <div class="price-grid">
+      <div class="price">
+        <h3>Monthly</h3>
+        <div class="amt">$9.99<small>/mo</small></div>
+        <div class="sub">Cancel anytime</div>
+        <ul>
+          <li>AI Nutritionist</li>
+          <li>AI Coach Insights</li>
+          <li>Premium themes</li>
+          <li>Unlimited history</li>
+        </ul>
+        <a href="#download" class="cta">Start trial</a>
+      </div>
+      <div class="price featured">
+        <div class="ribbon">BEST VALUE · 50% OFF</div>
+        <h3>Annual</h3>
+        <div class="amt">$59.99<small>/yr</small></div>
+        <div class="sub">7-day free trial · cancel anytime</div>
+        <ul>
+          <li>Everything in Monthly</li>
+          <li>CSV / JSON export</li>
+          <li>Custom programs</li>
+          <li>Apple Health 2-way sync</li>
+        </ul>
+        <a href="#download" class="cta">Start 7-day free trial</a>
+      </div>
+      <div class="price">
+        <h3>Lifetime</h3>
+        <div class="amt">$129<small>once</small></div>
+        <div class="sub">All future Pro features included</div>
+        <ul>
+          <li>Everything, forever</li>
+          <li>No subscription</li>
+          <li>No renewal</li>
+          <li>Best for long-term users</li>
+        </ul>
+        <a href="#download" class="cta">Buy lifetime</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer id="support">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <div class="brand" style="margin-bottom: 12px;">
+          <span class="brand-mark">V</span>
+          VELT
+        </div>
+        <p style="color: var(--text-secondary); font-size: 13px; max-width: 320px; line-height: 1.55;">
+          Premium workout tracker for serious lifters. Built in İstanbul.
+        </p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <a class="link" href="#features">Features</a>
+        <a class="link" href="#pricing">Pricing</a>
+        <a class="link" href="#download">Download</a>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <a class="link" href="/privacy">Privacy Policy</a>
+        <a class="link" href="/terms">Terms of Service</a>
+        <a class="link" href="/medical">Medical Disclaimer</a>
+        <a class="link" href="mailto:support@veltfitness.com">support@veltfitness.com</a>
+      </div>
+    </div>
+    <div class="legal">
+      © 2026 VELT Fitness · Made with intent in İstanbul
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -9,15 +9,24 @@ class VeltScreen extends StatelessWidget {
     required this.child,
     this.bottomPadding = 96,
     this.padding = const EdgeInsets.fromLTRB(18, 8, 18, 0),
+    this.onRefresh,
   });
 
   final Widget child;
   final double bottomPadding;
   final EdgeInsets padding;
+  /// When provided, the screen supports pull-to-refresh.
+  final Future<void> Function()? onRefresh;
 
   @override
   Widget build(BuildContext context) {
     final c = Theme.of(context).extension<AppColors>()!;
+    final scroller = SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics()),
+      padding: padding.copyWith(bottom: bottomPadding),
+      child: child,
+    );
     return Scaffold(
       backgroundColor: c.surface,
       body: SafeArea(
@@ -25,11 +34,15 @@ class VeltScreen extends StatelessWidget {
         child: Stack(
           children: [
             Positioned.fill(child: CustomPaint(painter: _VeltGridPainter(c))),
-            SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: padding.copyWith(bottom: bottomPadding),
-              child: child,
-            ),
+            if (onRefresh != null)
+              RefreshIndicator(
+                onRefresh: onRefresh!,
+                color: c.accentIron,
+                backgroundColor: c.surfaceElevated,
+                child: scroller,
+              )
+            else
+              scroller,
           ],
         ),
       ),

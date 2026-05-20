@@ -332,6 +332,16 @@ class _VeltBottomNav extends StatelessWidget {
                             letterSpacing: 0,
                           ),
                         ),
+                        const SizedBox(height: 3),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          height: 2,
+                          width: active ? 18 : 0,
+                          decoration: BoxDecoration(
+                            color: c.accentIron,
+                            borderRadius: BorderRadius.circular(1),
+                          ),
+                        ),
                       ],
                     ),
                   ),

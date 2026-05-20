@@ -1,0 +1,217 @@
+<!doctype html>
+<!--
+VELT App Store screenshot frame generator.
+
+Usage:
+  1. Drop your raw 1080×2400 Android screenshots in the same folder.
+  2. Open this file in Chrome.
+  3. Edit the SHOTS array below — set the file path + caption per slot.
+  4. Right-click each frame → Save image as → store/screenshots/framed/
+     OR use the "Export all" button (downloads them as PNG via canvas).
+
+Output: 1290×2796 (App Store 6.7" iPhone) framed screenshots ready to upload.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>VELT — Screenshot frames</title>
+<style>
+  :root {
+    --ink: #0F0F0F;
+    --elevated: #1A1A1A;
+    --accent: #D97706;
+    --text: #FFFFFF;
+    --text-sec: #A0A0A0;
+  }
+  body {
+    background: #1a1a1a;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+    margin: 0;
+    padding: 30px;
+  }
+  h1 { font-weight: 900; letter-spacing: -1px; margin: 0 0 8px; }
+  .hint { color: #a0a0a0; margin-bottom: 30px; font-size: 13px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    gap: 24px;
+  }
+  /* Each frame is the App Store 6.7" canvas */
+  .frame {
+    width: 100%;
+    aspect-ratio: 1290 / 2796;
+    background: linear-gradient(160deg, #0F0F0F 0%, #1A1A1A 70%);
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 18px 48px rgba(0,0,0,0.6);
+  }
+  .frame .caption {
+    padding: 40px 32px 24px;
+    text-align: center;
+  }
+  .frame .caption .eyebrow {
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 2.6px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .frame .caption h2 {
+    font-size: 30px;
+    font-weight: 900;
+    letter-spacing: -0.8px;
+    line-height: 1.05;
+    margin: 0;
+    color: var(--text);
+  }
+  .frame .device {
+    margin: 24px auto 0;
+    width: 78%;
+    aspect-ratio: 9 / 19.5;
+    border-radius: 36px;
+    overflow: hidden;
+    border: 6px solid #000;
+    box-shadow: 0 18px 48px rgba(0,0,0,0.6), 0 0 0 1px #2a2a2a inset;
+    position: relative;
+  }
+  .frame .device::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 22px;
+    background: #000;
+    border-radius: 999px;
+    z-index: 2;
+  }
+  .frame .device img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .frame .footer {
+    position: absolute;
+    bottom: 24px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-sec);
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    font-weight: 900;
+  }
+  .toolbar {
+    margin-bottom: 24px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  button {
+    background: var(--accent);
+    color: #000;
+    border: 0;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 900;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  button:hover { opacity: 0.92; }
+  .frame-label {
+    font-size: 11px;
+    color: #a0a0a0;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    font-weight: 900;
+  }
+</style>
+</head>
+<body>
+
+<h1>VELT — Screenshot frames</h1>
+<p class="hint">
+  Edit the <code>SHOTS</code> array in the script below to match your captured files in
+  <code>store/screenshots/android/</code>. Then right-click any frame to save as PNG, or
+  click "Export all" to download all 10 at once.
+</p>
+
+<div class="toolbar">
+  <button onclick="exportAll()">Export all (PNG)</button>
+  <span class="hint" style="margin: 0;">Files save with the slot name prefix.</span>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+// ─── EDIT THIS: 10 screenshot slots ──────────────────────────────────────────
+const SHOTS = [
+  { file: "android/01_home.png",            eyebrow: "Home",     caption: "Your training, at a glance." },
+  { file: "android/02_active_workout.png",  eyebrow: "Lift",     caption: "Log every set. Track every PR." },
+  { file: "android/03_exercise_library.png",eyebrow: "Library",  caption: "90+ exercises with coach cues." },
+  { file: "android/04_programs.png",        eyebrow: "Programs", caption: "10 proven programs. One tap to start." },
+  { file: "android/05_rest_timer.png",      eyebrow: "Rest",     caption: "Auto-start timer. Never lose tempo." },
+  { file: "android/06_plate_calc.png",      eyebrow: "Plates",   caption: "Know exactly what to load." },
+  { file: "android/07_progress.png",        eyebrow: "Progress", caption: "Volume that tells the truth." },
+  { file: "android/08_nutrition.png",       eyebrow: "Fuel",     caption: "Macros, water, and weekly rhythm." },
+  { file: "android/09_pro_paywall.png",     eyebrow: "Pro",      caption: "AI coach + premium themes." },
+  { file: "android/10_profile.png",         eyebrow: "You",      caption: "Achievements, streaks, lifetime." },
+];
+
+const grid = document.getElementById("grid");
+
+for (const [i, s] of SHOTS.entries()) {
+  const slot = String(i + 1).padStart(2, "0");
+  const frame = document.createElement("div");
+  frame.innerHTML = `
+    <div class="frame-label">${slot} — ${s.file}</div>
+    <div class="frame" data-slot="${slot}" data-name="${s.file.replace('android/','').replace('.png','')}">
+      <div class="caption">
+        <div class="eyebrow">${s.eyebrow}</div>
+        <h2>${s.caption}</h2>
+      </div>
+      <div class="device"><img src="${s.file}" alt="${s.eyebrow}" /></div>
+      <div class="footer">veltfitness.com</div>
+    </div>
+  `;
+  grid.appendChild(frame);
+}
+
+// Export all via canvas → PNG download
+async function exportAll() {
+  if (!window.html2canvas) {
+    // Lazy-load html2canvas from CDN
+    await new Promise((res, rej) => {
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  const frames = document.querySelectorAll(".frame");
+  for (const f of frames) {
+    const canvas = await window.html2canvas(f, {
+      scale: 2,            // crisp 2x output
+      backgroundColor: "#0F0F0F",
+      useCORS: true,
+      logging: false,
+    });
+    const url = canvas.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `framed_${f.dataset.slot}_${f.dataset.name}.png`;
+    a.click();
+    await new Promise(r => setTimeout(r, 200));
+  }
+}
+</script>
+
+</body>
+</html>
