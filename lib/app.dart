@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'services/health_service.dart';
 import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
-import 'theme/app_spacing.dart';
+
 import 'services/prefs_service.dart';
 import 'services/routine_store.dart';
 import 'services/workout_history_store.dart';
@@ -21,10 +22,12 @@ final ValueNotifier<String> veltThemeKey = ValueNotifier(PrefsService.theme);
 
 ThemeData _themeForKey(String key) {
   return switch (key) {
-    'slate'    => AppTheme.slate,
+    'slate' => AppTheme.slate,
     'roseGold' => AppTheme.roseGold,
-    'emerald'  => AppTheme.emerald,
-    _          => AppTheme.darkIron,
+    'emerald' => AppTheme.emerald,
+    'warm' => AppTheme.warmPaper,
+    'iron' => AppTheme.darkIron,
+    _ => AppTheme.warmPaper,
   };
 }
 
@@ -34,29 +37,30 @@ class VeltRoot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'VELT',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkIron,
-      home: const _ThemeListener(),
-    );
-  }
-}
-
-// Keeps MaterialApp stable; only AnimatedTheme rebuilds on theme change.
-class _ThemeListener extends StatelessWidget {
-  const _ThemeListener();
-
-  @override
-  Widget build(BuildContext context) {
     return ValueListenableBuilder<String>(
       valueListenable: veltThemeKey,
-      builder: (_, key, __) => AnimatedTheme(
-        data: _themeForKey(key),
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeInOut,
-        child: const VeltApp(),
-      ),
+      builder: (_, key, __) {
+        final data = _themeForKey(key);
+        final isLight = data.brightness == Brightness.light;
+        return MaterialApp(
+          title: 'VELT',
+          debugShowCheckedModeBanner: false,
+          theme: data,
+          themeMode: isLight ? ThemeMode.light : ThemeMode.dark,
+          darkTheme: isLight ? null : data,
+          themeAnimationDuration: Duration.zero,
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('en'),
+            Locale('tr'),
+          ],
+          home: const VeltApp(),
+        );
+      },
     );
   }
 }
@@ -71,7 +75,7 @@ class VeltApp extends StatefulWidget {
 
 class _VeltAppState extends State<VeltApp> {
   bool _onboardingDone = PrefsService.onboardingDone;
-  int  _activeTab      = 0;
+  int _activeTab = 0;
   String? _activeWorkoutName;
   bool _showSummary = false;
   CompletedWorkout? _completedWorkout;
@@ -125,7 +129,8 @@ class _VeltAppState extends State<VeltApp> {
     });
   }
 
-  List<({String exercise, double weight, int reps})> _newPRsFor(CompletedWorkout w) {
+  List<({String exercise, double weight, int reps})> _newPRsFor(
+      CompletedWorkout w) {
     final prevPRs = WorkoutHistoryStore.allTimePRs;
     final result = <({String exercise, double weight, int reps})>[];
     for (final ex in w.exercises) {
@@ -249,73 +254,93 @@ class _VeltBottomNav extends StatelessWidget {
   final int activeIndex;
   final void Function(int) onTap;
 
+  static const _tabs = [
+    _NavItem(icon: _NavIcon.home, label: 'Home'),
+    _NavItem(icon: _NavIcon.train, label: 'Train'),
+    _NavItem(icon: _NavIcon.nutrition, label: 'Nutrition'),
+    _NavItem(icon: _NavIcon.progress, label: 'Progress'),
+    _NavItem(icon: _NavIcon.profile, label: 'Profile'),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final c = Theme.of(context).extension<AppColors>()!;
-    const tabs = [
-      _NavItem(icon: _NavIcon.home,      label: 'Home'),
-      _NavItem(icon: _NavIcon.train,     label: 'Train'),
-      _NavItem(icon: _NavIcon.nutrition, label: 'Nutrition'),
-      _NavItem(icon: _NavIcon.progress,  label: 'Progress'),
-      _NavItem(icon: _NavIcon.profile,   label: 'Profile'),
-    ];
 
     return Container(
-      height: 56 + MediaQuery.of(context).padding.bottom,
       decoration: BoxDecoration(
         color: c.surface,
-        border: Border(top: BorderSide(color: c.divider, width: 0.5)),
+        border: Border(top: BorderSide(color: c.divider, width: 0.7)),
       ),
       child: SafeArea(
         top: false,
-        child: Row(
-          children: tabs.asMap().entries.map((e) {
-            final i = e.key;
-            final tab = e.value;
-            final active = i == activeIndex;
-            return Expanded(
-              child: Semantics(
-                label: tab.label,
-                button: true,
-                selected: active,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    onTap(i);
-                  },
-                  child: SizedBox(
-                    height: AppTouchTarget.tabBar,
+        child: SizedBox(
+          height: 72,
+          child: Row(
+            children: _tabs.asMap().entries.map((e) {
+              final i = e.key;
+              final tab = e.value;
+              final active = i == activeIndex;
+              final iconColor = active
+                  ? (c.accentIron.computeLuminance() > .55
+                      ? c.ink
+                      : Colors.white)
+                  : c.textTertiary;
+              final labelColor = active ? c.textPrimary : c.textTertiary;
+
+              return Expanded(
+                child: Semantics(
+                  label: tab.label,
+                  button: true,
+                  selected: active,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      onTap(i);
+                    },
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _buildIcon(tab.icon, active, c),
-                        if (active)
-                          Container(
-                            margin: const EdgeInsets.only(top: 5),
-                            width: 20, height: 2,
-                            decoration: BoxDecoration(
-                              color: c.accentIron,
-                              borderRadius: BorderRadius.circular(AppRadius.full),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 160),
+                          width: 25,
+                          height: 25,
+                          decoration: BoxDecoration(
+                            color: active ? c.accentIron : c.surfaceHigh,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: CustomPaint(
+                              size: const Size(16, 16),
+                              painter: _NavIconPainter(
+                                icon: tab.icon,
+                                color: iconColor,
+                                active: active,
+                              ),
                             ),
                           ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          tab.label,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 10,
+                            fontWeight:
+                                active ? FontWeight.w900 : FontWeight.w800,
+                            color: labelColor,
+                            letterSpacing: 0,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
-              ),
-            );
-          }).toList(),
+              );
+            }).toList(),
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildIcon(_NavIcon icon, bool active, AppColors c) {
-    final color = active ? c.accentIron : c.textTertiary;
-    return CustomPaint(
-      size: const Size(24, 24),
-      painter: _NavIconPainter(icon: icon, color: color, active: active),
     );
   }
 }
@@ -393,21 +418,28 @@ class _NavIconPainter extends CustomPainter {
       ..strokeWidth = sw;
 
     // center bar
-    canvas.drawLine(const Offset(9, 12), const Offset(15, 12),
-      Paint()..color = c..style = PaintingStyle.stroke
-             ..strokeCap = StrokeCap.round..strokeWidth = 2.2);
+    canvas.drawLine(
+        const Offset(9, 12),
+        const Offset(15, 12),
+        Paint()
+          ..color = c
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round
+          ..strokeWidth = 2.2);
     // left grip
     final lGrip = RRect.fromRectAndRadius(
-      const Rect.fromLTWH(5.5, 9.5, 3.5, 5), const Radius.circular(1));
+        const Rect.fromLTWH(5.5, 9.5, 3.5, 5), const Radius.circular(1));
     canvas.drawRRect(lGrip, stroke);
     // right grip
     final rGrip = RRect.fromRectAndRadius(
-      const Rect.fromLTWH(15, 9.5, 3.5, 5), const Radius.circular(1));
+        const Rect.fromLTWH(15, 9.5, 3.5, 5), const Radius.circular(1));
     canvas.drawRRect(rGrip, stroke);
     // left plate
-    final fillPaint = Paint()..color = c..style = PaintingStyle.fill;
+    final fillPaint = Paint()
+      ..color = c
+      ..style = PaintingStyle.fill;
     final lPlate = RRect.fromRectAndRadius(
-      const Rect.fromLTWH(2, 8, 3.5, 8), const Radius.circular(1.5));
+        const Rect.fromLTWH(2, 8, 3.5, 8), const Radius.circular(1.5));
     if (active) {
       canvas.drawRRect(lPlate, fillPaint);
     } else {
@@ -415,7 +447,7 @@ class _NavIconPainter extends CustomPainter {
     }
     // right plate
     final rPlate = RRect.fromRectAndRadius(
-      const Rect.fromLTWH(18.5, 8, 3.5, 8), const Radius.circular(1.5));
+        const Rect.fromLTWH(18.5, 8, 3.5, 8), const Radius.circular(1.5));
     if (active) {
       canvas.drawRRect(rPlate, fillPaint);
     } else {
@@ -426,8 +458,10 @@ class _NavIconPainter extends CustomPainter {
   void _drawNutrition(Canvas canvas, Paint p, bool active, Color c) {
     final sw = active ? 2.0 : 1.6;
     final stroke = Paint()
-      ..color = c..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round..strokeWidth = sw;
+      ..color = c
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = sw;
     // fork tines
     canvas.drawLine(const Offset(7, 3), const Offset(7, 7.5), stroke);
     canvas.drawLine(const Offset(5, 3), const Offset(5, 6), stroke);
@@ -452,8 +486,11 @@ class _NavIconPainter extends CustomPainter {
   void _drawProgress(Canvas canvas, Paint p, bool active, Color c) {
     final sw = active ? 2.0 : 1.6;
     final stroke = Paint()
-      ..color = c..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round..strokeJoin = StrokeJoin.round..strokeWidth = sw;
+      ..color = c
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..strokeWidth = sw;
     final path = Path()
       ..moveTo(4, 18)
       ..lineTo(8, 13)
@@ -462,24 +499,38 @@ class _NavIconPainter extends CustomPainter {
       ..lineTo(21, 6);
     canvas.drawPath(path, stroke);
     if (active) {
-      canvas.drawCircle(const Offset(21, 6), 1.5,
-        Paint()..color = c..style = PaintingStyle.fill);
+      canvas.drawCircle(
+          const Offset(21, 6),
+          1.5,
+          Paint()
+            ..color = c
+            ..style = PaintingStyle.fill);
     }
   }
 
   void _drawProfile(Canvas canvas, Paint p, bool active, Color c) {
     if (active) {
-      canvas.drawCircle(const Offset(12, 8), 4,
-        Paint()..color = c..style = PaintingStyle.fill);
+      canvas.drawCircle(
+          const Offset(12, 8),
+          4,
+          Paint()
+            ..color = c
+            ..style = PaintingStyle.fill);
       final bodyPath = Path()
         ..moveTo(4, 20)
         ..quadraticBezierTo(4, 13, 12, 13)
         ..quadraticBezierTo(20, 13, 20, 20)
         ..close();
-      canvas.drawPath(bodyPath, Paint()..color = c..style = PaintingStyle.fill);
+      canvas.drawPath(
+          bodyPath,
+          Paint()
+            ..color = c
+            ..style = PaintingStyle.fill);
     } else {
       final stroke = Paint()
-        ..color = c..style = PaintingStyle.stroke..strokeWidth = 1.6;
+        ..color = c
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.6;
       canvas.drawCircle(const Offset(12, 8), 4, stroke);
       final bodyPath = Path()
         ..moveTo(4, 20)

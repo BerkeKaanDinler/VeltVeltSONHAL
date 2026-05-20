@@ -9,6 +9,7 @@ class WorkoutExercise {
     required this.equipment,
     required List<SetRowData> sets,
     this.notes = '',
+    this.supersetId,
   }) : sets = List<SetRowData>.from(sets);
 
   final String id;
@@ -17,6 +18,8 @@ class WorkoutExercise {
   final String equipment;
   List<SetRowData> sets;
   String notes;
+  /// Exercises sharing the same supersetId form a superset (A1/A2/...).
+  String? supersetId;
 
   Map<String, dynamic> toJson() => {
     'id':        id,
@@ -25,6 +28,7 @@ class WorkoutExercise {
     'equipment': equipment,
     'sets':      sets.map((s) => s.toJson()).toList(),
     'notes':     notes,
+    if (supersetId != null) 'supersetId': supersetId,
   };
 
   factory WorkoutExercise.fromJson(Map<String, dynamic> j) => WorkoutExercise(
@@ -33,6 +37,7 @@ class WorkoutExercise {
     muscle:    j['muscle']    as String,
     equipment: j['equipment'] as String,
     notes:     (j['notes'] as String?) ?? '',
+    supersetId: j['supersetId'] as String?,
     sets: (j['sets'] as List)
         .map((s) => SetRowData.fromJson(s as Map<String, dynamic>))
         .toList(),

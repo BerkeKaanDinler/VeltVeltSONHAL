@@ -1,3 +1,5 @@
+// ignore_for_file: dead_code, unused_element, unused_import
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,8 +11,15 @@ import '../services/nutrition_store.dart';
 import '../services/prefs_service.dart';
 import '../services/routine_store.dart';
 import '../services/workout_history_store.dart';
+import '../models/workout.dart' show CompletedWorkout;
+import '../services/auth_service.dart';
+import '../services/pro_service.dart';
+import 'about_screen.dart';
+import 'auth_screen.dart';
+import 'paywall_screen.dart';
 import 'velt_pro_screen.dart';
 import 'workout_history_screen.dart';
+import '../widgets/velt_redesign_widgets.dart';
 
 // ── Theme preview data ─────────────────────────────────────────
 class _ThemePreview {
@@ -36,28 +45,54 @@ class _ThemePreview {
 
 const _themePreviews = [
   _ThemePreview(
-    key: 'iron', tier: 'free', name: 'Iron Dark',
+    key: 'iron',
+    tier: 'free',
+    name: 'Iron Dark',
     description: 'The default. Deep black with amber highlights.',
-    bg: Color(0xFF0F0F0F), card: Color(0xFF1A1A1A),
-    accent: Color(0xFFD97706), dividerColor: Color(0xFF2A2A2A),
+    bg: Color(0xFF0F0F0F),
+    card: Color(0xFF1A1A1A),
+    accent: Color(0xFFD97706),
+    dividerColor: Color(0xFF2A2A2A),
   ),
   _ThemePreview(
-    key: 'slate', tier: 'free', name: 'Slate Mono',
+    key: 'warm',
+    tier: 'free',
+    name: 'Warm Paper',
+    description: 'Editorial warm ivory with terracotta accents.',
+    bg: Color(0xFFF2EAD9),
+    card: Color(0xFFFBF6ED),
+    accent: Color(0xFFC55F18),
+    dividerColor: Color(0xFFD8CEBC),
+  ),
+  _ThemePreview(
+    key: 'slate',
+    tier: 'pro',
+    name: 'Slate Mono',
     description: 'Cool industrial — navy base with slate accents.',
-    bg: Color(0xFF0A0E1A), card: Color(0xFF141927),
-    accent: Color(0xFF94A3B8), dividerColor: Color(0xFF252B3D),
+    bg: Color(0xFF0A0E1A),
+    card: Color(0xFF141927),
+    accent: Color(0xFF94A3B8),
+    dividerColor: Color(0xFF252B3D),
   ),
   _ThemePreview(
-    key: 'roseGold', tier: 'pro', name: 'Rose Gold',
+    key: 'roseGold',
+    tier: 'pro',
+    name: 'Rose Gold',
     description: 'Warm noir — dark with rose gold highlights.',
-    bg: Color(0xFF100A0E), card: Color(0xFF1B131A),
-    accent: Color(0xFFF472B6), dividerColor: Color(0xFF2D2128),
+    bg: Color(0xFF100A0E),
+    card: Color(0xFF1B131A),
+    accent: Color(0xFFF472B6),
+    dividerColor: Color(0xFF2D2128),
   ),
   _ThemePreview(
-    key: 'emerald', tier: 'pro', name: 'Emerald Premium',
+    key: 'emerald',
+    tier: 'pro',
+    name: 'Emerald Premium',
     description: 'Deep forest — dark green with emerald accents.',
-    bg: Color(0xFF0A1410), card: Color(0xFF0F1F18),
-    accent: Color(0xFF10B981), dividerColor: Color(0xFF1F352A),
+    bg: Color(0xFF0A1410),
+    card: Color(0xFF0F1F18),
+    accent: Color(0xFF10B981),
+    dividerColor: Color(0xFF1F352A),
   ),
 ];
 
@@ -87,25 +122,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _unit       = PrefsService.unit;
-    _restSecs   = PrefsService.restSecs;
-    _goal       = PrefsService.fitnessGoal;
+    _unit = PrefsService.unit;
+    _restSecs = PrefsService.restSecs;
+    _goal = PrefsService.fitnessGoal;
     _experience = PrefsService.experienceLevel;
   }
 
   String get _levelLabel => switch (_experience) {
-    'beginner' => 'Beginner',
-    'advanced' => 'Advanced',
-    _          => 'Intermediate',
-  };
+        'beginner' => 'Beginner',
+        'advanced' => 'Advanced',
+        _ => 'Intermediate',
+      };
 
   String get _nutritionSummary {
     final raw = PrefsService.nutritionTargets;
     if (raw == null) return 'Not set';
     try {
       final m = jsonDecode(raw) as Map;
-      final cal  = m['calories'] as int? ?? 0;
-      final prot = m['protein']  as int? ?? 0;
+      final cal = m['calories'] as int? ?? 0;
+      final prot = m['protein'] as int? ?? 0;
       return '$cal kcal · ${prot}g protein';
     } catch (_) {
       return 'Not set';
@@ -172,7 +207,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         currentKey: widget.currentThemeKey,
         onSelect: (k) {
           widget.onThemeChange(k);
-          Navigator.pop(context);
         },
         c: Theme.of(context).extension<AppColors>()!,
       ),
@@ -216,7 +250,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 3),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm)),
+                borderRadius: BorderRadius.circular(AppRadius.sm)),
           ));
         },
       ),
@@ -232,8 +266,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final c = Theme.of(context).extension<AppColors>()!;
     final workoutCount = WorkoutHistoryStore.history.value.length;
-    final streak  = WorkoutHistoryStore.currentStreak;
+    final streak = WorkoutHistoryStore.currentStreak;
     final thisWeek = WorkoutHistoryStore.workoutsInPeriod('week');
+
+    return _FreshSettingsScreen(
+      currentThemeKey: widget.currentThemeKey,
+      onTheme: _showThemeSheet,
+      onRest: _showRestSheet,
+      onLevel: _showLevelSheet,
+      onGoal: _showGoalSheet,
+      onNutrition: _showNutriSheet,
+      onDelete: _showDeleteSheet,
+      unit: _unit,
+      onToggleUnit: _toggleUnit,
+    );
 
     return Scaffold(
       backgroundColor: c.surface,
@@ -244,9 +290,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // ── Header ─────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.screenH, AppSpacing.lg,
-                  AppSpacing.screenH, AppSpacing.md),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.screenH,
+                    AppSpacing.lg, AppSpacing.screenH, AppSpacing.md),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -264,8 +309,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'Your training profile.',
-                      style: AppTypography.bodyS(c.textTertiary).copyWith(
-                        fontSize: 13, fontWeight: FontWeight.w400),
+                      style: AppTypography.bodyS(c.textTertiary)
+                          .copyWith(fontSize: 13, fontWeight: FontWeight.w400),
                     ),
                     const SizedBox(height: 16),
                     // Stat strip
@@ -332,11 +377,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.screenH, 0,
-                AppSpacing.screenH, 100),
+                  AppSpacing.screenH, 0, AppSpacing.screenH, 100),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-
                   // ══ VELT PRO CARD ═════════════════════════════
                   _VeltProCard(c: c),
                   const SizedBox(height: 20),
@@ -424,7 +467,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const WorkoutHistoryScreen()),
+                            builder: (_) => const WorkoutHistoryScreen()),
                       ),
                       c: c,
                     ),
@@ -447,8 +490,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     padding: const EdgeInsets.fromLTRB(4, 8, 4, 20),
                     child: Text(
                       'Your training data stays on this device. Nothing is shared externally.',
-                      style: AppTypography.caption(c.textTertiary).copyWith(
-                          fontSize: 11, height: 1.5),
+                      style: AppTypography.caption(c.textTertiary)
+                          .copyWith(fontSize: 11, height: 1.5),
                     ),
                   ),
 
@@ -469,7 +512,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           behavior: SnackBarBehavior.floating,
                           duration: const Duration(seconds: 3),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.sm)),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.sm)),
                         ),
                       ),
                       c: c,
@@ -494,10 +538,708 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-
 }
 
 // ── Section label ──────────────────────────────────────────────
+class _FreshSettingsScreen extends StatelessWidget {
+  const _FreshSettingsScreen({
+    required this.currentThemeKey,
+    required this.onTheme,
+    required this.onRest,
+    required this.onLevel,
+    required this.onGoal,
+    required this.onNutrition,
+    required this.onDelete,
+    required this.unit,
+    required this.onToggleUnit,
+  });
+
+  final String currentThemeKey;
+  final VoidCallback onTheme;
+  final VoidCallback onRest;
+  final VoidCallback onLevel;
+  final VoidCallback onGoal;
+  final VoidCallback onNutrition;
+  final VoidCallback onDelete;
+  final String unit;
+  final ValueChanged<String> onToggleUnit;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).extension<AppColors>()!;
+    final themeName = _themePreviews
+        .firstWhere((t) => t.key == currentThemeKey,
+            orElse: () => _themePreviews.first)
+        .name;
+
+    return VeltScreen(
+      child: ValueListenableBuilder<List<CompletedWorkout>>(
+        valueListenable: WorkoutHistoryStore.history,
+        builder: (context, history, _) {
+          final totalWorkouts = history.length;
+          final totalVolume =
+              history.fold<double>(0, (a, w) => a + w.totalVolume);
+          final totalSets =
+              history.fold<int>(0, (a, w) => a + w.doneSets);
+          final totalMinutes =
+              history.fold<int>(0, (a, w) => a + w.elapsedSecs ~/ 60);
+          final streak = WorkoutHistoryStore.currentStreak;
+          final prCount = WorkoutHistoryStore.allTimePRs.length;
+          final name = PrefsService.displayName;
+          final initial =
+              name.isEmpty ? 'A' : name.characters.first.toUpperCase();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ValueListenableBuilder<bool>(
+                valueListenable: ProService.isPro,
+                builder: (_, isPro, __) => VeltHeader(
+                  eyebrow: 'Profile',
+                  title: 'You',
+                  trailing: VeltPill(isPro ? 'PRO' : 'FREE', accent: isPro),
+                ),
+              ),
+              // ── Hero profile card ────────────────────────────
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      c.surfaceElevated,
+                      c.accentIron.withValues(alpha: .14),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  border: Border.all(color: c.divider),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: c.accentIron,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: c.accentIron.withValues(alpha: .45),
+                                blurRadius: 18,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            initial,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              color: c.accentIron.computeLuminance() > .55
+                                  ? c.ink
+                                  : Colors.white,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        color: c.textPrimary,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: -0.3,
+                                      ),
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () => _editName(context),
+                                    child: Icon(Icons.edit_outlined,
+                                        color: c.textTertiary, size: 16),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${PrefsService.experienceLevel} · ${PrefsService.fitnessGoal}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  color: c.textSecondary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                            child: _ProfileStat(
+                                value: '$totalWorkouts',
+                                label: 'WORKOUTS',
+                                c: c)),
+                        Container(
+                            width: 1, height: 32, color: c.divider),
+                        Expanded(
+                            child: _ProfileStat(
+                                value: '$streak',
+                                label: 'STREAK',
+                                c: c)),
+                        Container(
+                            width: 1, height: 32, color: c.divider),
+                        Expanded(
+                            child: _ProfileStat(
+                                value: '$prCount', label: 'PRs', c: c)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const VeltSection(label: 'Lifetime'),
+              Row(
+                children: [
+                  Expanded(
+                      child: VeltMetric(
+                          value: _shortVol(totalVolume),
+                          label: 'Volume lifted')),
+                  const SizedBox(width: 8),
+                  Expanded(
+                      child: VeltMetric(
+                          value: '$totalSets', label: 'Sets done')),
+                  const SizedBox(width: 8),
+                  Expanded(
+                      child: VeltMetric(
+                          value: '${totalMinutes ~/ 60}h',
+                          label: 'Time in gym')),
+                ],
+              ),
+
+              const VeltSection(label: 'Achievements'),
+              SizedBox(
+                height: 96,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    _Achievement(
+                      icon: Icons.local_fire_department_rounded,
+                      title: 'On fire',
+                      sub: 'Streak ≥ 3',
+                      unlocked: streak >= 3,
+                      c: c,
+                    ),
+                    _Achievement(
+                      icon: Icons.emoji_events_rounded,
+                      title: 'PR Hunter',
+                      sub: '5+ PRs',
+                      unlocked: prCount >= 5,
+                      c: c,
+                    ),
+                    _Achievement(
+                      icon: Icons.fitness_center_rounded,
+                      title: 'Consistency',
+                      sub: '10 workouts',
+                      unlocked: totalWorkouts >= 10,
+                      c: c,
+                    ),
+                    _Achievement(
+                      icon: Icons.bolt_rounded,
+                      title: 'Heavy lifter',
+                      sub: '10k volume',
+                      unlocked: totalVolume >= 10000,
+                      c: c,
+                    ),
+                    _Achievement(
+                      icon: Icons.timer_rounded,
+                      title: 'Marathon',
+                      sub: '10h in gym',
+                      unlocked: totalMinutes >= 600,
+                      c: c,
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                ),
+              ),
+
+              // ── Pro upgrade big card ─────────────────────────
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      c.accentIron,
+                      c.accentIronSoft,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.workspace_premium_rounded,
+                            color: c.accentIron.computeLuminance() > .55
+                                ? c.ink
+                                : Colors.white,
+                            size: 26),
+                        const SizedBox(width: 8),
+                        Text(
+                          'VELT PRO',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            color: c.accentIron.computeLuminance() > .55
+                                ? c.ink
+                                : Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'AI coach · Premium themes · Advanced analytics · Export · Plate math AI',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        color: (c.accentIron.computeLuminance() > .55
+                                ? c.ink
+                                : Colors.white)
+                            .withValues(alpha: .88),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        height: 1.45,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const PaywallScreen()),
+                            ),
+                            child: Container(
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: c.surface,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'See plans',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  color: c.textPrimary,
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const VeltSection(label: 'Account'),
+              ValueListenableBuilder<VeltUser?>(
+                valueListenable: AuthService.currentUser,
+                builder: (_, user, __) {
+                  if (user == null) {
+                    return VeltRowCard(
+                      icon: 'S',
+                      title: 'Sign in to sync',
+                      subtitle:
+                          'Backup workouts, switch devices, never lose data',
+                      trailing:
+                          const VeltPill('Sign in', accent: true),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const AuthScreen()),
+                      ),
+                    );
+                  }
+                  final name =
+                      user.displayName ?? user.email.split('@').first;
+                  return Column(
+                    children: [
+                      VeltRowCard(
+                        icon: name.characters.first.toUpperCase(),
+                        title: name,
+                        subtitle: user.email,
+                        trailing: const VeltPill('Synced', success: true),
+                      ),
+                      const SizedBox(height: 8),
+                      VeltRowCard(
+                        icon: 'O',
+                        title: 'Sign out',
+                        subtitle: 'Keep local data, remove cloud session',
+                        trailing: const VeltPill('Sign out'),
+                        onTap: () async {
+                          HapticFeedback.selectionClick();
+                          await AuthService.signOut();
+                          await ProService.logout();
+                        },
+                      ),
+                    ],
+                  );
+                },
+              ),
+
+              const VeltSection(label: 'Preferences'),
+              VeltRowCard(
+                icon: 'T',
+                title: 'Theme',
+                subtitle: themeName,
+                trailing: const VeltPill('Edit'),
+                onTap: onTheme,
+              ),
+              const SizedBox(height: 8),
+              VeltRowCard(
+                icon: 'R',
+                title: 'Default rest timer',
+                subtitle: '${PrefsService.restSecs} seconds',
+                trailing: const VeltPill('Edit'),
+                onTap: onRest,
+              ),
+              const SizedBox(height: 8),
+              VeltRowCard(
+                icon: 'K',
+                title: 'Weight unit',
+                subtitle: unit == 'kg' ? 'Kilograms' : 'Pounds',
+                trailing: VeltPill(unit.toUpperCase(), success: true),
+                onTap: () => onToggleUnit(unit == 'kg' ? 'lbs' : 'kg'),
+              ),
+
+              const VeltSection(label: 'Goals'),
+              VeltRowCard(
+                icon: 'L',
+                title: 'Experience level',
+                subtitle: PrefsService.experienceLevel,
+                trailing: const VeltPill('Edit'),
+                onTap: onLevel,
+              ),
+              const SizedBox(height: 8),
+              VeltRowCard(
+                icon: 'G',
+                title: 'Fitness goal',
+                subtitle: PrefsService.fitnessGoal,
+                trailing: const VeltPill('Edit'),
+                onTap: onGoal,
+              ),
+              const SizedBox(height: 8),
+              VeltRowCard(
+                icon: 'N',
+                title: 'Nutrition targets',
+                subtitle: 'Daily macro goals',
+                trailing: const VeltPill('Edit'),
+                onTap: onNutrition,
+              ),
+              const SizedBox(height: 8),
+              StatefulBuilder(
+                builder: (ctx, setLocal) {
+                  final on = PrefsService.showRpe;
+                  return VeltRowCard(
+                    icon: 'R',
+                    title: 'Show RPE per set',
+                    subtitle: on
+                        ? 'Tap RPE chip to set (6–10)'
+                        : 'Track effort per set (advanced)',
+                    trailing:
+                        VeltPill(on ? 'ON' : 'OFF', accent: on),
+                    onTap: () {
+                      PrefsService.setShowRpe(!on);
+                      setLocal(() {});
+                      HapticFeedback.selectionClick();
+                    },
+                  );
+                },
+              ),
+
+              const VeltSection(label: 'About'),
+              VeltRowCard(
+                icon: 'i',
+                title: 'About VELT',
+                subtitle: 'Version, privacy, terms, disclaimer',
+                trailing: const VeltPill('Open'),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AboutScreen()),
+                  );
+                },
+              ),
+
+              const VeltSection(label: 'Danger zone'),
+              GestureDetector(
+                onTap: onDelete,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: c.errorRose.withValues(alpha: .08),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(
+                        color: c.errorRose.withValues(alpha: .32)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_forever_rounded,
+                          color: c.errorRose, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Delete all data',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            color: c.errorRose,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded,
+                          color: c.errorRose, size: 18),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _editName(BuildContext context) async {
+    final c = Theme.of(context).extension<AppColors>()!;
+    final ctrl = TextEditingController(text: PrefsService.displayName);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.surfaceElevated,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg)),
+        title: Text('Display name',
+            style: AppTypography.titleM(c.textPrimary)),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          maxLength: 20,
+          decoration: const InputDecoration(hintText: 'Your name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel',
+                style: AppTypography.bodyM(c.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: Text('Save',
+                style: AppTypography.bodyM(c.accentIron)
+                    .copyWith(fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
+    if (result != null && result.isNotEmpty) {
+      await PrefsService.setDisplayName(result);
+      if (context.mounted) {
+        (context as Element).markNeedsBuild();
+      }
+    }
+  }
+}
+
+String _shortVol(double v) {
+  if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(1)}M';
+  if (v >= 1000) return '${(v / 1000).toStringAsFixed(1)}k';
+  return v.toStringAsFixed(0);
+}
+
+class _ProfileStat extends StatelessWidget {
+  const _ProfileStat({
+    required this.value,
+    required this.label,
+    required this.c,
+  });
+  final String value;
+  final String label;
+  final AppColors c;
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            color: c.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            color: c.textTertiary,
+            fontSize: 9.5,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Achievement extends StatelessWidget {
+  const _Achievement({
+    required this.icon,
+    required this.title,
+    required this.sub,
+    required this.unlocked,
+    required this.c,
+  });
+  final IconData icon;
+  final String title;
+  final String sub;
+  final bool unlocked;
+  final AppColors c;
+  @override
+  Widget build(BuildContext context) {
+    final color = unlocked ? c.accentIron : c.textTertiary;
+    return Container(
+      width: 100,
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: c.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: unlocked
+              ? c.accentIron.withValues(alpha: .35)
+              : c.divider,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: unlocked ? .18 : .08),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            alignment: Alignment.center,
+            child: Icon(icon, color: color, size: 16),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  color: unlocked ? c.textPrimary : c.textSecondary,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 1),
+              Text(
+                sub,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  color: c.textTertiary,
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AboutRow extends StatelessWidget {
+  const _AboutRow({required this.label, required this.value, required this.c});
+  final String label;
+  final String value;
+  final AppColors c;
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(label,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                color: c.textSecondary,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              )),
+        ),
+        Text(value,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              color: c.textPrimary,
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            )),
+      ],
+    );
+  }
+}
+
 class _SectionLabel extends StatelessWidget {
   const _SectionLabel({required this.label, required this.c});
   final String label;
@@ -571,9 +1313,8 @@ class _SettingRowState extends State<_SettingRow> {
   Widget build(BuildContext context) {
     final c = widget.c;
     return GestureDetector(
-      onTapDown: (_) => widget.onTap != null
-          ? setState(() => _pressed = true)
-          : null,
+      onTapDown: (_) =>
+          widget.onTap != null ? setState(() => _pressed = true) : null,
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
       onTap: widget.onTap,
@@ -611,8 +1352,8 @@ class _SettingRowState extends State<_SettingRow> {
                     const SizedBox(height: 2),
                     Text(
                       widget.value!,
-                      style: AppTypography.bodyS(c.textTertiary).copyWith(
-                        fontSize: 11),
+                      style: AppTypography.bodyS(c.textTertiary)
+                          .copyWith(fontSize: 11),
                     ),
                   ],
                 ],
@@ -623,7 +1364,7 @@ class _SettingRowState extends State<_SettingRow> {
               Padding(
                 padding: const EdgeInsets.only(left: 6),
                 child: Icon(Icons.chevron_right_rounded,
-                  size: 16, color: c.textTertiary),
+                    size: 16, color: c.textTertiary),
               ),
           ],
         ),
@@ -634,8 +1375,8 @@ class _SettingRowState extends State<_SettingRow> {
 
 // ── Small widgets ──────────────────────────────────────────────
 class _ThemeDot extends StatelessWidget {
-  const _ThemeDot({
-    required this.color, required this.outline, required this.ring});
+  const _ThemeDot(
+      {required this.color, required this.outline, required this.ring});
   final Color color;
   final Color outline;
   final Color ring;
@@ -643,7 +1384,8 @@ class _ThemeDot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 22, height: 22,
+      width: 22,
+      height: 22,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: color,
@@ -675,8 +1417,8 @@ class _GoalPill extends StatelessWidget {
       ),
       child: Text(
         goal,
-        style: AppTypography.caption(c.accentIron).copyWith(
-          fontSize: 11, fontWeight: FontWeight.w700),
+        style: AppTypography.caption(c.accentIron)
+            .copyWith(fontSize: 11, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -707,8 +1449,8 @@ class _ComingSoonPill extends StatelessWidget {
 }
 
 class _UnitToggle extends StatelessWidget {
-  const _UnitToggle({
-    required this.selected, required this.onSelect, required this.c});
+  const _UnitToggle(
+      {required this.selected, required this.onSelect, required this.c});
   final String selected;
   final ValueChanged<String> onSelect;
   final AppColors c;
@@ -758,8 +1500,8 @@ class _UnitToggle extends StatelessWidget {
 
 // ── Rest Timer Sheet ───────────────────────────────────────────
 class _RestTimerSheet extends StatefulWidget {
-  const _RestTimerSheet({
-    required this.value, required this.c, required this.onSave});
+  const _RestTimerSheet(
+      {required this.value, required this.c, required this.onSave});
   final int value;
   final AppColors c;
   final ValueChanged<int> onSave;
@@ -783,7 +1525,8 @@ class _RestTimerSheetState extends State<_RestTimerSheet> {
     return Container(
       decoration: BoxDecoration(
         color: c.surfaceElevated,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
       child: Column(
@@ -792,8 +1535,8 @@ class _RestTimerSheetState extends State<_RestTimerSheet> {
           _SheetHandle(c: c),
           const SizedBox(height: 16),
           Text('Default Rest Timer',
-            style: AppTypography.titleM(c.textPrimary).copyWith(
-              fontSize: 18, letterSpacing: -0.3)),
+              style: AppTypography.titleM(c.textPrimary)
+                  .copyWith(fontSize: 18, letterSpacing: -0.3)),
           const SizedBox(height: 20),
           // Big countdown display
           Text(
@@ -809,7 +1552,8 @@ class _RestTimerSheetState extends State<_RestTimerSheet> {
             ),
           ),
           Text('seconds',
-            style: AppTypography.bodyS(c.textSecondary).copyWith(fontSize: 12)),
+              style:
+                  AppTypography.bodyS(c.textSecondary).copyWith(fontSize: 12)),
           const SizedBox(height: 16),
           // Slider
           SliderTheme(
@@ -831,10 +1575,12 @@ class _RestTimerSheetState extends State<_RestTimerSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('30s', style: AppTypography.caption(c.textTertiary)
-                  .copyWith(fontSize: 10)),
-              Text('5min', style: AppTypography.caption(c.textTertiary)
-                  .copyWith(fontSize: 10)),
+              Text('30s',
+                  style: AppTypography.caption(c.textTertiary)
+                      .copyWith(fontSize: 10)),
+              Text('5min',
+                  style: AppTypography.caption(c.textTertiary)
+                      .copyWith(fontSize: 10)),
             ],
           ),
           const SizedBox(height: 16),
@@ -852,8 +1598,8 @@ class _RestTimerSheetState extends State<_RestTimerSheet> {
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 7),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
                       color: active
                           ? c.accentIron.withValues(alpha: 0.12)
@@ -892,8 +1638,8 @@ class _RestTimerSheetState extends State<_RestTimerSheet> {
 
 // ── Level Sheet ────────────────────────────────────────────────
 class _LevelSheet extends StatefulWidget {
-  const _LevelSheet({
-    required this.current, required this.c, required this.onSave});
+  const _LevelSheet(
+      {required this.current, required this.c, required this.onSave});
   final String current;
   final AppColors c;
   final ValueChanged<String> onSave;
@@ -912,9 +1658,24 @@ class _LevelSheetState extends State<_LevelSheet> {
   }
 
   static const _levels = [
-    (id: 'beginner',     label: 'Beginner',     desc: 'Less than 1 year of training', rest: 75),
-    (id: 'intermediate', label: 'Intermediate', desc: '1 – 3 years of training',       rest: 90),
-    (id: 'advanced',     label: 'Advanced',     desc: '3+ years, programmed training', rest: 120),
+    (
+      id: 'beginner',
+      label: 'Beginner',
+      desc: 'Less than 1 year of training',
+      rest: 75
+    ),
+    (
+      id: 'intermediate',
+      label: 'Intermediate',
+      desc: '1 – 3 years of training',
+      rest: 90
+    ),
+    (
+      id: 'advanced',
+      label: 'Advanced',
+      desc: '3+ years, programmed training',
+      rest: 120
+    ),
   ];
 
   @override
@@ -923,7 +1684,8 @@ class _LevelSheetState extends State<_LevelSheet> {
     return Container(
       decoration: BoxDecoration(
         color: c.surfaceElevated,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
       child: Column(
@@ -934,8 +1696,8 @@ class _LevelSheetState extends State<_LevelSheet> {
           Align(
             alignment: Alignment.centerLeft,
             child: Text('Experience Level',
-              style: AppTypography.titleM(c.textPrimary).copyWith(
-                fontSize: 18, letterSpacing: -0.3)),
+                style: AppTypography.titleM(c.textPrimary)
+                    .copyWith(fontSize: 18, letterSpacing: -0.3)),
           ),
           const SizedBox(height: 16),
           ..._levels.map((l) {
@@ -969,12 +1731,12 @@ class _LevelSheetState extends State<_LevelSheet> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(l.label,
-                              style: AppTypography.titleM(c.textPrimary)
-                                  .copyWith(fontSize: 14)),
+                                style: AppTypography.titleM(c.textPrimary)
+                                    .copyWith(fontSize: 14)),
                             const SizedBox(height: 2),
                             Text(l.desc,
-                              style: AppTypography.bodyS(c.textSecondary)
-                                  .copyWith(fontSize: 11)),
+                                style: AppTypography.bodyS(c.textSecondary)
+                                    .copyWith(fontSize: 11)),
                             const SizedBox(height: 4),
                             Text(
                               'REST TIMER DEFAULT · ${l.rest}s',
@@ -986,13 +1748,14 @@ class _LevelSheetState extends State<_LevelSheet> {
                       ),
                       if (active)
                         Container(
-                          width: 22, height: 22,
+                          width: 22,
+                          height: 22,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: c.accentIron,
                           ),
                           child: const Icon(Icons.check_rounded,
-                            size: 12, color: Colors.white),
+                              size: 12, color: Colors.white),
                         ),
                     ],
                   ),
@@ -1013,8 +1776,8 @@ class _LevelSheetState extends State<_LevelSheet> {
 
 // ── Goal Sheet (2×2 grid) ──────────────────────────────────────
 class _GoalSheet extends StatefulWidget {
-  const _GoalSheet({
-    required this.current, required this.c, required this.onSave});
+  const _GoalSheet(
+      {required this.current, required this.c, required this.onSave});
   final String current;
   final AppColors c;
   final ValueChanged<String> onSave;
@@ -1033,10 +1796,18 @@ class _GoalSheetState extends State<_GoalSheet> {
   }
 
   static const _goals = [
-    (id: 'Build Muscle', desc: 'Add lean mass & size',      color: Color(0xFFD97706)),
-    (id: 'Lose Fat',     desc: 'Lean out, keep strength',   color: Color(0xFF22C55E)),
-    (id: 'Strength',     desc: 'Push your 1RM higher',      color: Color(0xFF6366F1)),
-    (id: 'Endurance',    desc: 'Last longer, recover faster', color: Color(0xFF06B6D4)),
+    (
+      id: 'Build Muscle',
+      desc: 'Add lean mass & size',
+      color: Color(0xFFD97706)
+    ),
+    (id: 'Lose Fat', desc: 'Lean out, keep strength', color: Color(0xFF22C55E)),
+    (id: 'Strength', desc: 'Push your 1RM higher', color: Color(0xFF6366F1)),
+    (
+      id: 'Endurance',
+      desc: 'Last longer, recover faster',
+      color: Color(0xFF06B6D4)
+    ),
   ];
 
   @override
@@ -1045,7 +1816,8 @@ class _GoalSheetState extends State<_GoalSheet> {
     return Container(
       decoration: BoxDecoration(
         color: c.surfaceElevated,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
       child: Column(
@@ -1056,8 +1828,8 @@ class _GoalSheetState extends State<_GoalSheet> {
           Align(
             alignment: Alignment.centerLeft,
             child: Text('Fitness Goal',
-              style: AppTypography.titleM(c.textPrimary).copyWith(
-                fontSize: 18, letterSpacing: -0.3)),
+                style: AppTypography.titleM(c.textPrimary)
+                    .copyWith(fontSize: 18, letterSpacing: -0.3)),
           ),
           const SizedBox(height: 16),
           GridView.count(
@@ -1083,9 +1855,8 @@ class _GoalSheetState extends State<_GoalSheet> {
                         : c.surfaceHigh,
                     borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(
-                      color: active
-                          ? g.color
-                          : c.divider.withValues(alpha: 0.5),
+                      color:
+                          active ? g.color : c.divider.withValues(alpha: 0.5),
                       width: active ? 1.5 : 0.5,
                     ),
                   ),
@@ -1094,15 +1865,16 @@ class _GoalSheetState extends State<_GoalSheet> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(g.id,
-                        style: AppTypography.titleM(c.textPrimary).copyWith(
-                          fontSize: 13, fontWeight: FontWeight.w700,
-                          letterSpacing: -0.05)),
+                          style: AppTypography.titleM(c.textPrimary).copyWith(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.05)),
                       const SizedBox(height: 3),
                       Text(g.desc,
-                        style: AppTypography.bodyS(c.textSecondary).copyWith(
-                          fontSize: 10, height: 1.3),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis),
+                          style: AppTypography.bodyS(c.textSecondary)
+                              .copyWith(fontSize: 10, height: 1.3),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis),
                     ],
                   ),
                 ),
@@ -1142,7 +1914,7 @@ class _ThemeSheetState extends State<_ThemeSheet> {
   Widget build(BuildContext context) {
     final c = widget.c;
     final freeThemes = _themePreviews.where((t) => t.tier == 'free').toList();
-    final proThemes  = _themePreviews.where((t) => t.tier == 'pro').toList();
+    final proThemes = _themePreviews.where((t) => t.tier == 'pro').toList();
 
     if (_upgradeTarget != null) {
       return _UpgradePrompt(
@@ -1155,104 +1927,109 @@ class _ThemeSheetState extends State<_ThemeSheet> {
     return Container(
       decoration: BoxDecoration(
         color: c.surfaceElevated,
-        borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(AppRadius.lg)),
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _SheetHandle(c: c),
-        // Title + close
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Row(
-            children: [
-              Text('Choose Theme',
-                style: AppTypography.titleM(c.textPrimary).copyWith(
-                  fontSize: 16, fontWeight: FontWeight.w700)),
-              const Spacer(),
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Text('×', style: TextStyle(
-                  color: c.textSecondary, fontSize: 22,
-                  fontWeight: FontWeight.w300, height: 1)),
-              ),
-            ],
-          ),
-        ),
-        Flexible(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _SheetHandle(c: c),
+          // Title + close
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Row(
               children: [
-                Text(
-                  'Theme changes apply instantly across every screen.',
-                  style: AppTypography.bodyS(c.textTertiary).copyWith(
-                    fontSize: 12, height: 1.5),
+                Text('Choose Theme',
+                    style: AppTypography.titleM(c.textPrimary)
+                        .copyWith(fontSize: 16, fontWeight: FontWeight.w700)),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Text('×',
+                      style: TextStyle(
+                          color: c.textSecondary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w300,
+                          height: 1)),
                 ),
-                const SizedBox(height: 16),
-                // FREE section
-                Text('FREE',
-                  style: AppTypography.caption(c.textTertiary).copyWith(
-                    fontSize: 10, fontWeight: FontWeight.w600,
-                    letterSpacing: 1.2)),
-                const SizedBox(height: 8),
-                ...freeThemes.map((t) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: _ThemeCard(
-                    preview: t,
-                    active: widget.currentKey == t.key,
-                    locked: false,
-                    c: c,
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      widget.onSelect(t.key);
-                      Navigator.pop(context);
-                    },
-                  ),
-                )),
-                const SizedBox(height: 12),
-                // PRO section
-                Row(
-                  children: [
-                    Text('VELT PRO',
-                      style: AppTypography.caption(c.textTertiary).copyWith(
-                        fontSize: 10, fontWeight: FontWeight.w600,
-                        letterSpacing: 1.2)),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: c.accentIron.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(AppRadius.full),
-                      ),
-                      child: Text('UPGRADE',
-                        style: AppTypography.caption(c.accentIron).copyWith(
-                          fontSize: 9, fontWeight: FontWeight.w700)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ...proThemes.map((t) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: _ThemeCard(
-                    preview: t,
-                    active: widget.currentKey == t.key,
-                    locked: true,
-                    c: c,
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      setState(() => _upgradeTarget = t);
-                    },
-                  ),
-                )),
               ],
             ),
           ),
-        ),
-      ],
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Theme changes apply instantly across every screen.',
+                    style: AppTypography.bodyS(c.textTertiary)
+                        .copyWith(fontSize: 12, height: 1.5),
+                  ),
+                  const SizedBox(height: 16),
+                  // FREE section
+                  Text('FREE',
+                      style: AppTypography.caption(c.textTertiary).copyWith(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.2)),
+                  const SizedBox(height: 8),
+                  ...freeThemes.map((t) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _ThemeCard(
+                          preview: t,
+                          active: widget.currentKey == t.key,
+                          locked: false,
+                          c: c,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            widget.onSelect(t.key);
+                            Navigator.pop(context);
+                          },
+                        ),
+                      )),
+                  const SizedBox(height: 12),
+                  // PRO section
+                  Row(
+                    children: [
+                      Text('VELT PRO',
+                          style: AppTypography.caption(c.textTertiary).copyWith(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.2)),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: c.accentIron.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(AppRadius.full),
+                        ),
+                        child: Text('UPGRADE',
+                            style: AppTypography.caption(c.accentIron).copyWith(
+                                fontSize: 9, fontWeight: FontWeight.w700)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ...proThemes.map((t) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _ThemeCard(
+                          preview: t,
+                          active: widget.currentKey == t.key,
+                          locked: true,
+                          c: c,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _upgradeTarget = t);
+                          },
+                        ),
+                      )),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1260,7 +2037,8 @@ class _ThemeSheetState extends State<_ThemeSheet> {
 
 // ── Upgrade prompt (inline, replaces the theme list) ───────────
 class _UpgradePrompt extends StatelessWidget {
-  const _UpgradePrompt({required this.theme, required this.c, required this.onBack});
+  const _UpgradePrompt(
+      {required this.theme, required this.c, required this.onBack});
   final _ThemePreview theme;
   final AppColors c;
   final VoidCallback onBack;
@@ -1270,8 +2048,8 @@ class _UpgradePrompt extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: c.surfaceElevated,
-        borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(AppRadius.lg)),
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       child: Column(
@@ -1290,11 +2068,11 @@ class _UpgradePrompt extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.arrow_back_ios_rounded,
-                      size: 14, color: c.textSecondary),
+                        size: 14, color: c.textSecondary),
                     const SizedBox(width: 4),
                     Text('Back to themes',
-                      style: AppTypography.bodyS(c.textSecondary).copyWith(
-                        fontSize: 13, fontWeight: FontWeight.w500)),
+                        style: AppTypography.bodyS(c.textSecondary).copyWith(
+                            fontSize: 13, fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
@@ -1313,33 +2091,38 @@ class _UpgradePrompt extends StatelessWidget {
             child: Column(
               children: [
                 Container(
-                  width: 50, height: 50,
+                  width: 50,
+                  height: 50,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: theme.accent.withValues(alpha: 0.18),
                   ),
                   child: Icon(Icons.lock_outline_rounded,
-                    size: 20, color: theme.accent),
+                      size: 20, color: theme.accent),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   theme.name,
                   style: TextStyle(
-                    fontFamily: 'Inter', fontSize: 20, fontWeight: FontWeight.w700,
-                    color: theme.bg.computeLuminance() > 0.3
-                        ? const Color(0xFF1A1410)
-                        : const Color(0xFFF1F5F9),
-                    letterSpacing: -0.4),
+                      fontFamily: 'Inter',
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: theme.bg.computeLuminance() > 0.3
+                          ? const Color(0xFF1A1410)
+                          : const Color(0xFFF1F5F9),
+                      letterSpacing: -0.4),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   theme.description,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Inter', fontSize: 12, height: 1.5,
-                    color: theme.bg.computeLuminance() > 0.3
-                        ? const Color(0xFF6B5B4E)
-                        : const Color(0xFF94A3B8)),
+                      fontFamily: 'Inter',
+                      fontSize: 12,
+                      height: 1.5,
+                      color: theme.bg.computeLuminance() > 0.3
+                          ? const Color(0xFF6B5B4E)
+                          : const Color(0xFF94A3B8)),
                 ),
               ],
             ),
@@ -1348,8 +2131,8 @@ class _UpgradePrompt extends StatelessWidget {
           Text(
             'Premium themes are part of VELT Pro, alongside advanced analytics, cloud backup, and more.',
             textAlign: TextAlign.center,
-            style: AppTypography.bodyS(c.textSecondary).copyWith(
-              fontSize: 13, height: 1.5),
+            style: AppTypography.bodyS(c.textSecondary)
+                .copyWith(fontSize: 13, height: 1.5),
           ),
           const SizedBox(height: 16),
           PrimaryButton(
@@ -1358,8 +2141,7 @@ class _UpgradePrompt extends StatelessWidget {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                    builder: (_) => const VeltProScreen()),
+                MaterialPageRoute(builder: (_) => const PaywallScreen()),
               );
             },
           ),
@@ -1393,16 +2175,16 @@ class _NutriSheetState extends State<_NutriSheet> {
     if (raw != null) {
       try {
         final m = jsonDecode(raw) as Map;
-        cal   = m['calories'] as int? ?? cal;
-        prot  = m['protein']  as int? ?? prot;
-        carbs = m['carbs']    as int? ?? carbs;
-        fat   = m['fat']      as int? ?? fat;
+        cal = m['calories'] as int? ?? cal;
+        prot = m['protein'] as int? ?? prot;
+        carbs = m['carbs'] as int? ?? carbs;
+        fat = m['fat'] as int? ?? fat;
       } catch (_) {}
     }
-    _calCtrl   = TextEditingController(text: '$cal');
-    _protCtrl  = TextEditingController(text: '$prot');
+    _calCtrl = TextEditingController(text: '$cal');
+    _protCtrl = TextEditingController(text: '$prot');
     _carbsCtrl = TextEditingController(text: '$carbs');
-    _fatCtrl   = TextEditingController(text: '$fat');
+    _fatCtrl = TextEditingController(text: '$fat');
   }
 
   @override
@@ -1415,10 +2197,10 @@ class _NutriSheetState extends State<_NutriSheet> {
   }
 
   void _save() {
-    final cal   = int.tryParse(_calCtrl.text)   ?? 0;
-    final prot  = int.tryParse(_protCtrl.text)  ?? 0;
+    final cal = int.tryParse(_calCtrl.text) ?? 0;
+    final prot = int.tryParse(_protCtrl.text) ?? 0;
     final carbs = int.tryParse(_carbsCtrl.text) ?? 0;
-    final fat   = int.tryParse(_fatCtrl.text)   ?? 0;
+    final fat = int.tryParse(_fatCtrl.text) ?? 0;
     NutritionStore.updateTargets(
         NutritionTargets(calories: cal, protein: prot, carbs: carbs, fat: fat));
     widget.onSave(cal, prot, carbs, fat);
@@ -1428,12 +2210,13 @@ class _NutriSheetState extends State<_NutriSheet> {
   Widget build(BuildContext context) {
     final c = widget.c;
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         decoration: BoxDecoration(
           color: c.surfaceElevated,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
         child: Column(
@@ -1443,22 +2226,25 @@ class _NutriSheetState extends State<_NutriSheet> {
             _SheetHandle(c: c),
             const SizedBox(height: 16),
             Text('Nutrition Targets',
-              style: AppTypography.titleM(c.textPrimary).copyWith(
-                fontSize: 18, letterSpacing: -0.3)),
+                style: AppTypography.titleM(c.textPrimary)
+                    .copyWith(fontSize: 18, letterSpacing: -0.3)),
             const SizedBox(height: 4),
             Text('Set your daily macro targets.',
-              style: AppTypography.bodyS(c.textTertiary).copyWith(fontSize: 12)),
+                style:
+                    AppTypography.bodyS(c.textTertiary).copyWith(fontSize: 12)),
             const SizedBox(height: 20),
             Row(
               children: [
-                Expanded(child: _NutriField(
+                Expanded(
+                    child: _NutriField(
                   label: 'Calories',
                   unit: 'kcal',
                   ctrl: _calCtrl,
                   c: c,
                 )),
                 const SizedBox(width: 8),
-                Expanded(child: _NutriField(
+                Expanded(
+                    child: _NutriField(
                   label: 'Protein',
                   unit: 'g',
                   ctrl: _protCtrl,
@@ -1469,14 +2255,16 @@ class _NutriSheetState extends State<_NutriSheet> {
             const SizedBox(height: 10),
             Row(
               children: [
-                Expanded(child: _NutriField(
+                Expanded(
+                    child: _NutriField(
                   label: 'Carbs',
                   unit: 'g',
                   ctrl: _carbsCtrl,
                   c: c,
                 )),
                 const SizedBox(width: 8),
-                Expanded(child: _NutriField(
+                Expanded(
+                    child: _NutriField(
                   label: 'Fat',
                   unit: 'g',
                   ctrl: _fatCtrl,
@@ -1513,7 +2301,7 @@ class _NutriField extends StatelessWidget {
         Text(
           label.toUpperCase(),
           style: AppTypography.caption(c.textTertiary).copyWith(
-            fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.8),
+              fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.8),
         ),
         const SizedBox(height: 6),
         Container(
@@ -1528,11 +2316,11 @@ class _NutriField extends StatelessWidget {
                 child: TextField(
                   controller: ctrl,
                   keyboardType: TextInputType.number,
-                  style: AppTypography.bodyM(c.textPrimary).copyWith(
-                    fontSize: 15, fontWeight: FontWeight.w600),
+                  style: AppTypography.bodyM(c.textPrimary)
+                      .copyWith(fontSize: 15, fontWeight: FontWeight.w600),
                   decoration: InputDecoration(
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 10),
+                        horizontal: 12, vertical: 10),
                     border: InputBorder.none,
                     hintText: '0',
                     hintStyle: AppTypography.bodyM(c.textTertiary),
@@ -1542,8 +2330,8 @@ class _NutriField extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(right: 10),
                 child: Text(unit,
-                  style: AppTypography.caption(c.textTertiary).copyWith(
-                    fontSize: 11, fontWeight: FontWeight.w500)),
+                    style: AppTypography.caption(c.textTertiary)
+                        .copyWith(fontSize: 11, fontWeight: FontWeight.w500)),
               ),
             ],
           ),
@@ -1564,7 +2352,8 @@ class _DeleteSheet extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: c.surfaceElevated,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
       child: Column(
@@ -1574,20 +2363,21 @@ class _DeleteSheet extends StatelessWidget {
           _SheetHandle(c: c),
           const SizedBox(height: 16),
           Text('Clear All Data?',
-            style: AppTypography.titleM(c.textPrimary).copyWith(
-              fontSize: 18, letterSpacing: -0.3)),
+              style: AppTypography.titleM(c.textPrimary)
+                  .copyWith(fontSize: 18, letterSpacing: -0.3)),
           const SizedBox(height: 12),
           RichText(
             text: TextSpan(
-              style: AppTypography.bodyS(c.textSecondary).copyWith(
-                fontSize: 14, height: 1.6),
+              style: AppTypography.bodyS(c.textSecondary)
+                  .copyWith(fontSize: 14, height: 1.6),
               children: [
                 const TextSpan(
-                  text: 'This will permanently delete all your workouts, routines, PRs, and nutrition logs. '),
+                    text:
+                        'This will permanently delete all your workouts, routines, PRs, and nutrition logs. '),
                 TextSpan(
                   text: 'This cannot be undone.',
                   style: TextStyle(
-                    color: c.errorRose, fontWeight: FontWeight.w700),
+                      color: c.errorRose, fontWeight: FontWeight.w700),
                 ),
               ],
             ),
@@ -1616,7 +2406,7 @@ class _DeleteSheet extends StatelessWidget {
                       child: Text(
                         'Delete Everything',
                         style: AppTypography.titleS(Colors.white).copyWith(
-                          fontSize: 13, fontWeight: FontWeight.w700),
+                            fontSize: 13, fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
@@ -1639,7 +2429,8 @@ class _SheetHandle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: 36, height: 4,
+        width: 36,
+        height: 4,
         decoration: BoxDecoration(
           color: c.divider,
           borderRadius: BorderRadius.circular(2),
@@ -1691,8 +2482,8 @@ class _MiniStat extends StatelessWidget {
             const SizedBox(height: 3),
             Text(
               label,
-              style: AppTypography.caption(c.textTertiary)
-                  .copyWith(fontSize: 10),
+              style:
+                  AppTypography.caption(c.textTertiary).copyWith(fontSize: 10),
             ),
           ],
         ),
@@ -1811,9 +2602,7 @@ class _ThemeCard extends StatelessWidget {
           color: c.surfaceHigh,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color: active
-                ? c.accentIron
-                : c.divider.withValues(alpha: 0.5),
+            color: active ? c.accentIron : c.divider.withValues(alpha: 0.5),
             width: active ? 1.5 : 0.5,
           ),
         ),
@@ -1821,18 +2610,21 @@ class _ThemeCard extends StatelessWidget {
           children: [
             // 64×64 preview swatch
             Container(
-              width: 64, height: 64,
+              width: 64,
+              height: 64,
               decoration: BoxDecoration(
                 color: preview.bg,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 border: Border.all(
-                  color: preview.dividerColor.withValues(alpha: 0.8),
-                  width: 0.5),
+                    color: preview.dividerColor.withValues(alpha: 0.8),
+                    width: 0.5),
               ),
               child: Stack(
                 children: [
                   Positioned(
-                    top: 8, left: 6, right: 6,
+                    top: 8,
+                    left: 6,
+                    right: 6,
                     child: Container(
                       height: 14,
                       decoration: BoxDecoration(
@@ -1842,9 +2634,11 @@ class _ThemeCard extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    top: 26, left: 6,
+                    top: 26,
+                    left: 6,
                     child: Container(
-                      width: 28, height: 8,
+                      width: 28,
+                      height: 8,
                       decoration: BoxDecoration(
                         color: preview.card.withValues(alpha: 0.7),
                         borderRadius: BorderRadius.circular(2),
@@ -1852,9 +2646,11 @@ class _ThemeCard extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    bottom: 8, left: 6,
+                    bottom: 8,
+                    left: 6,
                     child: Container(
-                      width: 18, height: 18,
+                      width: 18,
+                      height: 18,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: preview.accent,
@@ -1862,9 +2658,11 @@ class _ThemeCard extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    bottom: 14, right: 6,
+                    bottom: 14,
+                    right: 6,
                     child: Container(
-                      width: 22, height: 6,
+                      width: 22,
+                      height: 6,
                       decoration: BoxDecoration(
                         color: preview.accent.withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(2),
@@ -1884,21 +2682,21 @@ class _ThemeCard extends StatelessWidget {
                     children: [
                       Text(
                         preview.name,
-                        style: AppTypography.titleM(c.textPrimary).copyWith(
-                          fontSize: 14, letterSpacing: -0.1),
+                        style: AppTypography.titleM(c.textPrimary)
+                            .copyWith(fontSize: 14, letterSpacing: -0.1),
                       ),
                       if (locked) ...[
                         const SizedBox(width: 6),
                         Icon(Icons.lock_outline_rounded,
-                          size: 12, color: c.textTertiary),
+                            size: 12, color: c.textTertiary),
                       ],
                     ],
                   ),
                   const SizedBox(height: 2),
                   Text(
                     preview.description,
-                    style: AppTypography.bodyS(c.textTertiary).copyWith(
-                      fontSize: 11, height: 1.4),
+                    style: AppTypography.bodyS(c.textTertiary)
+                        .copyWith(fontSize: 11, height: 1.4),
                   ),
                 ],
               ),
@@ -1907,13 +2705,14 @@ class _ThemeCard extends StatelessWidget {
             // Trailing
             if (active)
               Container(
-                width: 22, height: 22,
+                width: 22,
+                height: 22,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: c.accentIron,
                 ),
                 child: const Icon(Icons.check_rounded,
-                  size: 12, color: Colors.white),
+                    size: 12, color: Colors.white),
               )
             else if (locked)
               Container(
@@ -1923,9 +2722,10 @@ class _ThemeCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.full),
                 ),
                 child: Text('PRO',
-                  style: AppTypography.caption(c.accentIron).copyWith(
-                    fontSize: 9, fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5)),
+                    style: AppTypography.caption(c.accentIron).copyWith(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5)),
               ),
           ],
         ),

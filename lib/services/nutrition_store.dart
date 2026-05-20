@@ -72,6 +72,8 @@ class NutritionStore {
   // Today's entries
   static final entries  = ValueNotifier<List<FoodEntry>>([]);
   static final targets  = ValueNotifier<NutritionTargets>(const NutritionTargets());
+  static final waterGlasses = ValueNotifier<int>(0);
+  static const waterTarget = 8;
 
   static Future<void> init() async {
     // Load targets
@@ -84,6 +86,29 @@ class NutritionStore {
     }
     // Load today's log
     _loadToday();
+    _loadWater();
+  }
+
+  static void _loadWater() {
+    final raw = PrefsService.nutritionDay('water_${_dateKeySuffix()}');
+    waterGlasses.value = raw == null ? 0 : int.tryParse(raw) ?? 0;
+  }
+
+  static String _dateKeySuffix() {
+    final now = DateTime.now();
+    return '${now.year}_${now.month}_${now.day}';
+  }
+
+  static Future<void> addWater() async {
+    waterGlasses.value = (waterGlasses.value + 1).clamp(0, 20);
+    await PrefsService.saveNutritionDay(
+        'water_${_dateKeySuffix()}', waterGlasses.value.toString());
+  }
+
+  static Future<void> removeWater() async {
+    waterGlasses.value = (waterGlasses.value - 1).clamp(0, 20);
+    await PrefsService.saveNutritionDay(
+        'water_${_dateKeySuffix()}', waterGlasses.value.toString());
   }
 
   static void _loadToday() {

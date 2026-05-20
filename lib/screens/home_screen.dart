@@ -1,3 +1,5 @@
+// ignore_for_file: dead_code, unused_element, unused_import
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
@@ -14,7 +16,17 @@ import '../models/workout.dart' show WorkoutExercise, CompletedWorkout;
 import 'workout_history_screen.dart';
 import 'exercise_detail_screen.dart' show PRDetailScreen;
 import '../widgets/shared_widgets.dart' show SectionHeader;
+import '../widgets/velt_redesign_widgets.dart';
 
+// ── Helpers ───────────────────────────────────────────────────
+IconData _goalIcon(String goal) => switch (goal) {
+      'Lose Fat' => Icons.local_fire_department_rounded,
+      'Strength' => Icons.bolt_rounded,
+      'Endurance' => Icons.directions_run_rounded,
+      _ => Icons.trending_up_rounded,
+    };
+
+// ─────────────────────────────────────────────────────────────
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
@@ -27,10 +39,15 @@ class HomeScreen extends StatelessWidget {
   final void Function(int tab) onNavigate;
   final CompletedWorkout? lastWorkout;
 
-
   @override
   Widget build(BuildContext context) {
     final c = Theme.of(context).extension<AppColors>()!;
+
+    return _FreshHomeScreen(
+      onStartWorkout: onStartWorkout,
+      onNavigate: onNavigate,
+      lastWorkout: lastWorkout,
+    );
 
     return Scaffold(
       backgroundColor: c.surface,
@@ -39,14 +56,15 @@ class HomeScreen extends StatelessWidget {
         child: ValueListenableBuilder<List<CompletedWorkout>>(
           valueListenable: WorkoutHistoryStore.history,
           builder: (context, history, _) {
-            final streak     = WorkoutHistoryStore.currentStreak;
-            final dotDays    = WorkoutHistoryStore.last7Days;
+            final streak = WorkoutHistoryStore.currentStreak;
+            final dotDays = WorkoutHistoryStore.last7Days;
             final weekVolume = WorkoutHistoryStore.totalVolumeInPeriod('week');
             final monthCount = WorkoutHistoryStore.workoutsInPeriod('month');
-            final prs        = WorkoutHistoryStore.allTimePRs;
+            final prs = WorkoutHistoryStore.allTimePRs;
 
             final doneToday = history.isNotEmpty &&
-                HomeHelpers.isSameDay(history.first.completedAt, DateTime.now());
+                HomeHelpers.isSameDay(
+                    history.first.completedAt, DateTime.now());
 
             final effectiveHistory = history.isNotEmpty
                 ? history
@@ -54,83 +72,21 @@ class HomeScreen extends StatelessWidget {
 
             return CustomScrollView(
               slivers: [
-                // ── Greeting ────────────────────────────────────
+                // ── Header ──────────────────────────────────
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.screenH, AppSpacing.lg,
-                      AppSpacing.screenH, AppSpacing.xs),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'VELT',
-                                style: AppTypography.caption(
-                                  c.accentIron.withValues(alpha: 0.65),
-                                ).copyWith(
-                                  fontSize: 10,
-                                  letterSpacing: 3.0,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1,
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              Text(
-                                HomeHelpers.greeting(),
-                                style: AppTypography.displayL(c.textPrimary).copyWith(
-                                  fontSize: 30, letterSpacing: -1, height: 1),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                HomeHelpers.motivationLine(streak, doneToday, prs.length),
-                                style: AppTypography.bodyS(c.textTertiary).copyWith(
-                                  fontSize: 13, height: 1.4),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Goal chip
-                        const SizedBox(width: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: c.accentIron.withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.circular(AppRadius.full),
-                            border: Border.all(
-                              color: c.accentIron.withValues(alpha: 0.36)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(_goalIcon(PrefsService.fitnessGoal),
-                                size: 11, color: c.accentIron),
-                              const SizedBox(width: 5),
-                              Text(
-                                PrefsService.fitnessGoal,
-                                style: AppTypography.caption(c.accentIron).copyWith(
-                                  fontSize: 11, fontWeight: FontWeight.w700),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                  child: _HomeHeader(
+                    streak: streak,
+                    doneToday: doneToday,
+                    c: c,
                   ),
                 ),
 
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.screenH, AppSpacing.sm,
-                    AppSpacing.screenH, 100),
+                      AppSpacing.screenH, 0, AppSpacing.screenH, 100),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
-
-                      // ── Today's Training ─────────────────────
+                      // ── Today's Training ─────────────────
                       ValueListenableBuilder<List<Routine>>(
                         valueListenable: RoutineStore.routines,
                         builder: (ctx, routines, _) {
@@ -142,50 +98,31 @@ class HomeScreen extends StatelessWidget {
                             doneToday: doneToday,
                             onStart: next == null
                                 ? () => onStartWorkout('Empty Workout', null)
-                                : () => onStartWorkout(next.name, next.exercises),
-                            onQuickStart: () => onStartWorkout('Empty Workout', null),
+                                : () =>
+                                    onStartWorkout(next.name, next.exercises),
+                            onQuickStart: () =>
+                                onStartWorkout('Empty Workout', null),
                             onBrowsePrograms: () => onNavigate(VeltTabs.train),
                             c: c,
                           );
                         },
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 20),
 
-                      // ── Stats row ────────────────────────────
-                      Row(
-                        children: [
-                          _StatBox(
-                            value: streak > 0 ? '$streak' : '—',
-                            label: 'Day Streak',
-                            icon: Icons.local_fire_department_rounded,
-                            highlight: streak >= 3,
-                            c: c,
-                          ),
-                          const SizedBox(width: 8),
-                          _StatBox(
-                            value: WeightUnit.formatVolume(weekVolume),
-                            label: 'This Week',
-                            icon: Icons.fitness_center_rounded,
-                            highlight: false,
-                            c: c,
-                          ),
-                          const SizedBox(width: 8),
-                          _StatBox(
-                            value: '$monthCount',
-                            label: 'This Month',
-                            icon: Icons.calendar_today_outlined,
-                            highlight: false,
-                            c: c,
-                          ),
-                        ],
+                      // ── Weekly consistency ────────────────
+                      _WeeklyStrip(dotDays: dotDays, c: c),
+                      const SizedBox(height: 20),
+
+                      // ── Stats row ─────────────────────────
+                      _StatsRow(
+                        streak: streak,
+                        weekVolume: weekVolume,
+                        monthCount: monthCount,
+                        c: c,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
 
-                      // ── Last 7 Days ───────────────────────────
-                      _Last7Days(dotDays: dotDays, c: c),
-                      const SizedBox(height: 20),
-
-                      // ── Last Session ──────────────────────────
+                      // ── Last Session ──────────────────────
                       SectionHeader(
                         label: 'Last Session',
                         action: history.length > 1 ? 'All History' : null,
@@ -193,9 +130,11 @@ class HomeScreen extends StatelessWidget {
                             ? () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const WorkoutHistoryScreen()))
+                                    builder: (_) => WorkoutHistoryScreen(
+                                          onStartWorkout: onStartWorkout,
+                                        )))
                             : null,
-                        padding: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.only(bottom: 10),
                       ),
                       if (effectiveHistory.isNotEmpty)
                         _LastWorkoutCard(
@@ -204,24 +143,25 @@ class HomeScreen extends StatelessWidget {
                         )
                       else
                         _SkeletonLastSession(c: c),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
 
-                      // ── Personal Records ──────────────────────
+                      // ── Personal Records ──────────────────
                       SectionHeader(
                         label: 'Personal Records',
                         action: prs.isNotEmpty ? 'See all' : null,
                         onAction: () => onNavigate(VeltTabs.progress),
-                        padding: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.only(bottom: 10),
                       ),
                       if (prs.isNotEmpty)
                         SizedBox(
-                          height: 100,
+                          height: 104,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             padding: EdgeInsets.zero,
                             physics: const BouncingScrollPhysics(),
                             itemCount: prs.entries.take(8).length,
-                            separatorBuilder: (_, __) => const SizedBox(width: 8),
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(width: 8),
                             itemBuilder: (_, i) {
                               final entry = prs.entries.toList()[i];
                               return _PRChip(
@@ -248,13 +188,719 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  static IconData _goalIcon(String goal) => switch (goal) {
-    'Lose Fat'  => Icons.local_fire_department_rounded,
-    'Strength'  => Icons.bolt_rounded,
-    'Endurance' => Icons.directions_run_rounded,
-    _           => Icons.trending_up_rounded,
-  };
+// ── Home Header ───────────────────────────────────────────────
+class _FreshHomeScreen extends StatelessWidget {
+  const _FreshHomeScreen({
+    required this.onStartWorkout,
+    required this.onNavigate,
+    this.lastWorkout,
+  });
+
+  final void Function(String, List<WorkoutExercise>?) onStartWorkout;
+  final void Function(int tab) onNavigate;
+  final CompletedWorkout? lastWorkout;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).extension<AppColors>()!;
+    return VeltScreen(
+      child: ValueListenableBuilder<List<CompletedWorkout>>(
+        valueListenable: WorkoutHistoryStore.history,
+        builder: (context, history, _) {
+          final streak = WorkoutHistoryStore.currentStreak;
+          final weekVolume = WorkoutHistoryStore.totalVolumeInPeriod('week');
+          final effectiveHistory = history.isNotEmpty
+              ? history
+              : (lastWorkout != null ? [lastWorkout!] : <CompletedWorkout>[]);
+          final last = effectiveHistory.isEmpty ? null : effectiveHistory.first;
+          final readiness = (72 + (streak * 3)).clamp(72, 92);
+
+          return ValueListenableBuilder<List<Routine>>(
+            valueListenable: RoutineStore.routines,
+            builder: (context, routines, _) {
+              final next = routines.isEmpty
+                  ? null
+                  : HomeHelpers.pickNextRoutine(routines);
+              final nextName = next?.name ?? 'Empty Workout';
+              final nextExercises = next?.exercises.length ?? 0;
+              final nextSets = next == null
+                  ? 0
+                  : next.exercises
+                      .fold<int>(0, (sum, e) => sum + e.sets.length);
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  VeltHeader(
+                    eyebrow: _dateLabel(),
+                    title: 'Home',
+                    trailing: _Wordmark(c: c),
+                  ),
+                  VeltPanel(
+                    hero: true,
+                    padding: const EdgeInsets.all(15),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const VeltPill("Today's plan", accent: true),
+                        const SizedBox(height: 9),
+                        Text(
+                          '$nextName is ready.',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            color: c.textPrimary,
+                            fontSize: 34,
+                            height: 1.06,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                        const SizedBox(height: 7),
+                        Text(
+                          next == null
+                              ? 'Start fast and build the session as you lift.'
+                              : 'A focused session with one clear progression target.',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            color: c.textSecondary,
+                            fontSize: 12,
+                            height: 1.4,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        Row(
+                          children: [
+                            Expanded(
+                                child: VeltMetric(
+                                    value: '$nextExercises',
+                                    label: 'Exercises')),
+                            const SizedBox(width: 8),
+                            Expanded(
+                                child: VeltMetric(
+                                    value: nextSets == 0
+                                        ? '—'
+                                        : '${(nextSets * 2.5).round()}',
+                                    label: 'Minutes')),
+                            const SizedBox(width: 8),
+                            Expanded(
+                                child: VeltMetric(
+                                    value:
+                                        nextSets == 0 ? '+ Set' : '$nextSets',
+                                    label: 'Sets')),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: VeltButton(
+                                label: 'Start Workout',
+                                onTap: () =>
+                                    onStartWorkout(nextName, next?.exercises),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 72,
+                              child: VeltButton(
+                                label: 'Edit',
+                                secondary: true,
+                                onTap: () => onNavigate(VeltTabs.train),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const VeltSection(
+                    label: 'Readiness',
+                    trailing: VeltPill('Good load', success: true),
+                  ),
+                  Row(
+                    children: [
+                      VeltPanel(
+                        child: SizedBox(
+                          width: 86,
+                          height: 102,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              VeltRing(
+                                value: '$readiness',
+                                label: 'Score',
+                                progress: readiness / 100,
+                              ),
+                              const SizedBox(height: 9),
+                              const VeltLabel('Score'),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: VeltPanel(
+                          child: Column(
+                            children: [
+                              _HomeLoadLine(
+                                label: 'Weekly volume',
+                                value: WeightUnit.formatVolume(weekVolume),
+                                pct: (weekVolume / 10000).clamp(0, 1).toDouble(),
+                              ),
+                              const SizedBox(height: 9),
+                              _HomeLoadLine(
+                                label: 'Streak',
+                                value: '$streak day${streak == 1 ? '' : 's'}',
+                                pct: (streak / 7).clamp(0, 1).toDouble(),
+                              ),
+                              const SizedBox(height: 9),
+                              _HomeLoadLine(
+                                label: 'Sessions / wk',
+                                value: '${_sessionsThisWeek(history)} / 7',
+                                pct: (_sessionsThisWeek(history) / 7)
+                                    .clamp(0, 1)
+                                    .toDouble(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const VeltSection(label: 'Quick access'),
+                  Row(
+                    children: [
+                      Expanded(
+                          child: _HomeQuickTile(
+                              icon: Icons.library_books_rounded,
+                              label: 'Exercises',
+                              sublabel: '90+ moves',
+                              onTap: () => onNavigate(VeltTabs.train),
+                              c: c)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                          child: _HomeQuickTile(
+                              icon: Icons.fitness_center_rounded,
+                              label: 'Programs',
+                              sublabel: '10 plans',
+                              onTap: () => onNavigate(VeltTabs.train),
+                              c: c)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                          child: _HomeQuickTile(
+                              icon: Icons.trending_up_rounded,
+                              label: 'Progress',
+                              sublabel: 'Track PRs',
+                              onTap: () => onNavigate(VeltTabs.progress),
+                              c: c)),
+                    ],
+                  ),
+                  VeltSection(
+                    label: 'Last workout',
+                    trailing: VeltPill(last == null ? 'Empty' : 'View'),
+                  ),
+                  if (last == null)
+                    VeltPanel(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const VeltLabel('No sessions yet'),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Start your first workout to build history.',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              color: c.textPrimary,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else ...[
+                    VeltRowCard(
+                      icon: last.routineName.characters.first.toUpperCase(),
+                      title: last.routineName,
+                      subtitle:
+                          '${last.relativeDate} · ${last.durationLabel} · ${last.doneSets} sets · ${last.volumeLabel}',
+                      trailing: VeltPill(
+                        last.totalVolume > 0 ? 'Open' : 'Empty',
+                        accent: last.totalVolume > 0,
+                      ),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => WorkoutDetailScreen(
+                            workout: last,
+                            onRepeat: (src) => onStartWorkout(
+                              src.routineName,
+                              WorkoutHistoryStore.templateFromCompleted(src),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (WorkoutHistoryStore.recentTemplates().isNotEmpty) ...[
+                    const VeltSection(
+                      label: 'Repeat a session',
+                      trailing: VeltPill('From history', accent: true),
+                    ),
+                    SizedBox(
+                      height: 92,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        padding: EdgeInsets.zero,
+                        itemCount:
+                            WorkoutHistoryStore.recentTemplates().length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        itemBuilder: (_, i) {
+                          final w = WorkoutHistoryStore.recentTemplates()[i];
+                          return _RepeatCard(
+                            workout: w,
+                            onTap: () {
+                              HapticFeedback.mediumImpact();
+                              onStartWorkout(
+                                w.routineName,
+                                WorkoutHistoryStore.templateFromCompleted(w),
+                              );
+                            },
+                            c: c,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  String _dateLabel() {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    const days = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
+    ];
+    final now = DateTime.now();
+    return '${days[now.weekday - 1]}, ${months[now.month - 1]} ${now.day}';
+  }
+}
+
+class _RepeatCard extends StatelessWidget {
+  const _RepeatCard({
+    required this.workout,
+    required this.onTap,
+    required this.c,
+  });
+  final CompletedWorkout workout;
+  final VoidCallback onTap;
+  final AppColors c;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 170,
+        padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+        decoration: BoxDecoration(
+          color: c.surfaceElevated,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: c.divider),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: c.accentIron.withValues(alpha: .15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(Icons.replay_rounded,
+                      color: c.accentIron, size: 16),
+                ),
+                const Spacer(),
+                Text(
+                  workout.relativeDate,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    color: c.textTertiary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  workout.routineName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    color: c.textPrimary,
+                    fontSize: 13,
+                    height: 1.15,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '${workout.exercises.length} ex · ${workout.totalSets} sets',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    color: c.textTertiary,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+int _sessionsThisWeek(List<CompletedWorkout> history) {
+  final now = DateTime.now();
+  final weekAgo = now.subtract(const Duration(days: 7));
+  return history.where((w) => w.completedAt.isAfter(weekAgo)).length;
+}
+
+class _HomeQuickTile extends StatelessWidget {
+  const _HomeQuickTile({
+    required this.icon,
+    required this.label,
+    required this.sublabel,
+    required this.onTap,
+    required this.c,
+  });
+  final IconData icon;
+  final String label;
+  final String sublabel;
+  final VoidCallback onTap;
+  final AppColors c;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      child: Container(
+        height: 92,
+        padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+        decoration: BoxDecoration(
+          color: c.surfaceElevated,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: c.divider),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            Container(
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                color: c.accentIron.withValues(alpha: .14),
+                borderRadius: BorderRadius.circular(7),
+              ),
+              child: Icon(icon, color: c.accentIron, size: 14),
+            ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      color: c.textPrimary,
+                      fontSize: 12,
+                      height: 1.1,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                    )),
+                const SizedBox(height: 2),
+                Text(sublabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      color: c.textTertiary,
+                      fontSize: 10,
+                      height: 1.1,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0,
+                    )),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Wordmark extends StatelessWidget {
+  const _Wordmark({required this.c});
+  final AppColors c;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 38,
+      padding: const EdgeInsets.symmetric(horizontal: 11),
+      decoration: BoxDecoration(
+        color: Color.lerp(c.surfaceElevated, c.accentIron, .16),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Color.lerp(c.divider, c.accentIron, .34)!),
+      ),
+      child: Center(
+        child: Text(
+          'VELT',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            color: c.accentIron,
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeLoadLine extends StatelessWidget {
+  const _HomeLoadLine({
+    required this.label,
+    required this.value,
+    required this.pct,
+  });
+
+  final String label;
+  final String value;
+  final double pct;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).extension<AppColors>()!;
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(child: VeltLabel(label)),
+            Text(
+              value,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                color: c.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 5),
+        VeltProgressBar(value: pct),
+      ],
+    );
+  }
+}
+
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader({
+    required this.streak,
+    required this.doneToday,
+    required this.c,
+  });
+  final int streak;
+  final bool doneToday;
+  final AppColors c;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    final wdays = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
+    ];
+    final dateStr =
+        '${wdays[now.weekday - 1]}, ${months[now.month - 1]} ${now.day}';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screenH, AppSpacing.lg, AppSpacing.screenH, AppSpacing.md),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Wordmark
+                Text(
+                  'VELT',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: c.accentIron,
+                    letterSpacing: 3.5,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                // Greeting
+                Text(
+                  HomeHelpers.greeting(),
+                  style: AppTypography.displayL(c.textPrimary)
+                      .copyWith(fontSize: 28, letterSpacing: -0.8, height: 1.1),
+                ),
+                const SizedBox(height: 5),
+                // Date + streak
+                Row(
+                  children: [
+                    Text(
+                      dateStr,
+                      style: AppTypography.bodyS(c.textTertiary)
+                          .copyWith(fontSize: 12),
+                    ),
+                    if (streak >= 2) ...[
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 7),
+                        width: 3,
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: c.textTertiary.withValues(alpha: 0.4),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      Text(
+                        '$streak day streak',
+                        style: AppTypography.bodyS(c.accentIron).copyWith(
+                            fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                    if (doneToday && streak < 2) ...[
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 7),
+                        width: 3,
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: c.textTertiary.withValues(alpha: 0.4),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      Text(
+                        'Trained today',
+                        style: AppTypography.bodyS(c.successLime).copyWith(
+                            fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Goal chip
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: c.accentIron.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(AppRadius.full),
+              border: Border.all(
+                color: c.accentIron.withValues(alpha: 0.25),
+                width: 0.5,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(_goalIcon(PrefsService.fitnessGoal),
+                    size: 11, color: c.accentIron),
+                const SizedBox(width: 5),
+                Text(
+                  PrefsService.fitnessGoal,
+                  style: AppTypography.caption(c.accentIron)
+                      .copyWith(fontSize: 11, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ── Today Card ────────────────────────────────────────────────
@@ -288,7 +934,7 @@ class _TodayCardState extends State<_TodayCard>
     super.initState();
     _pulseCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1900),
+      duration: const Duration(milliseconds: 2200),
     )..repeat(reverse: true);
     _pulse = CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut);
   }
@@ -312,14 +958,12 @@ class _TodayCardState extends State<_TodayCard>
     }
 
     final exercises = widget.routine!.exercises;
-    final preview   = exercises
-        .take(4)
-        .map((e) => e.name.split(' ').first)
-        .join(' · ');
+    final preview =
+        exercises.take(4).map((e) => e.name.split(' ').first).join(' · ');
     final moreCount = (exercises.length - 4).clamp(0, 99);
-    final sets      = exercises.fold(0, (a, e) => a + e.sets.length);
-    final estMin    = (sets * 2.5).round().clamp(15, 120);
-    final label     = widget.doneToday ? 'NEXT SESSION' : "TODAY'S PLAN";
+    final sets = exercises.fold(0, (a, e) => a + e.sets.length);
+    final estMin = (sets * 2.5).round().clamp(15, 120);
+    final label = widget.doneToday ? 'NEXT SESSION' : "TODAY'S PLAN";
 
     return Container(
       clipBehavior: Clip.hardEdge,
@@ -331,52 +975,61 @@ class _TodayCardState extends State<_TodayCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top gradient accent
+          // Top accent stripe
           Container(
             height: 3,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                stops: const [0.0, 0.25, 0.75, 1.0],
-                colors: [
-                  Colors.transparent,
-                  c.accentIron,
-                  c.accentIron,
-                  Colors.transparent,
-                ],
-              ),
-            ),
+            color: widget.doneToday
+                ? c.accentIron.withValues(alpha: 0.35)
+                : c.accentIron,
           ),
+
+          // Label row
           Padding(
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
             child: Row(
               children: [
-                Text(
-                  label,
-                  style: AppTypography.caption(c.accentIron).copyWith(
-                    letterSpacing: 1.2,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 10,
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: c.accentIron
+                        .withValues(alpha: widget.doneToday ? 0.07 : 0.12),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                  child: Text(
+                    label,
+                    style: AppTypography.caption(
+                      widget.doneToday
+                          ? c.accentIron.withValues(alpha: 0.65)
+                          : c.accentIron,
+                    ).copyWith(
+                      letterSpacing: 0.8,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 10,
+                    ),
                   ),
                 ),
                 const Spacer(),
+                // Meta pill
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: c.surfaceHigh,
                     borderRadius: BorderRadius.circular(AppRadius.full),
+                    border: Border.all(
+                        color: c.divider.withValues(alpha: 0.6), width: 0.5),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.fitness_center_rounded,
-                        size: 10, color: c.textTertiary),
+                          size: 10, color: c.textTertiary),
                       const SizedBox(width: 4),
                       Text(
                         '${exercises.length} ex · ~$estMin min',
-                        style: AppTypography.caption(c.textSecondary).copyWith(
-                          fontSize: 10),
+                        style: AppTypography.caption(c.textSecondary)
+                            .copyWith(fontSize: 10),
                       ),
                     ],
                   ),
@@ -387,11 +1040,11 @@ class _TodayCardState extends State<_TodayCard>
 
           // Routine name
           Padding(
-            padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
+            padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
             child: Text(
               widget.routine!.name,
-              style: AppTypography.displayM(c.textPrimary).copyWith(
-                fontSize: 24, letterSpacing: -0.8, height: 1.1),
+              style: AppTypography.displayM(c.textPrimary)
+                  .copyWith(fontSize: 26, letterSpacing: -0.8, height: 1.1),
             ),
           ),
 
@@ -401,27 +1054,28 @@ class _TodayCardState extends State<_TodayCard>
               padding: const EdgeInsets.fromLTRB(18, 5, 18, 0),
               child: Text(
                 moreCount > 0 ? '$preview  +$moreCount more' : preview,
-                style: AppTypography.bodyS(c.textTertiary).copyWith(fontSize: 12),
+                style: AppTypography.bodyS(c.textTertiary)
+                    .copyWith(fontSize: 12.5),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
 
-          // Start button — pulsing glow when not done today
+          // Start button with subtle pulse on CTA
           AnimatedBuilder(
             animation: _pulse,
             builder: (_, child) => Container(
-              margin: const EdgeInsets.fromLTRB(18, 16, 18, 0),
+              margin: const EdgeInsets.fromLTRB(18, 18, 18, 0),
               decoration: widget.doneToday
                   ? null
                   : BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       boxShadow: [
                         BoxShadow(
-                          color: c.accentIron.withValues(
-                            alpha: 0.14 + _pulse.value * 0.20),
-                          blurRadius: 10 + _pulse.value * 14,
-                          spreadRadius: _pulse.value * 3,
+                          color: c.accentIron
+                              .withValues(alpha: 0.06 + _pulse.value * 0.08),
+                          blurRadius: 12 + _pulse.value * 10,
+                          spreadRadius: 0,
                         ),
                       ],
                     ),
@@ -434,14 +1088,20 @@ class _TodayCardState extends State<_TodayCard>
                   HapticFeedback.mediumImpact();
                   widget.onStart();
                 },
-                icon: const Icon(Icons.play_arrow_rounded, size: 20),
-                label: const Text('Start Training'),
+                icon: Icon(
+                  widget.doneToday
+                      ? Icons.skip_next_rounded
+                      : Icons.play_arrow_rounded,
+                  size: 20,
+                ),
+                label: Text(
+                    widget.doneToday ? 'Start Next Session' : 'Start Training'),
                 style: FilledButton.styleFrom(
                   backgroundColor: c.accentIron,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.sm)),
+                      borderRadius: BorderRadius.circular(AppRadius.md)),
                   textStyle: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,
@@ -453,7 +1113,7 @@ class _TodayCardState extends State<_TodayCard>
             ),
           ),
 
-          // Quick start link
+          // Quick start ghost link
           GestureDetector(
             onTap: widget.onQuickStart,
             child: Padding(
@@ -462,12 +1122,12 @@ class _TodayCardState extends State<_TodayCard>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.bolt_rounded, size: 14, color: c.textSecondary),
-                    const SizedBox(width: 5),
+                    Icon(Icons.bolt_rounded, size: 13, color: c.textSecondary),
+                    const SizedBox(width: 4),
                     Text(
                       'or start an empty workout',
-                      style: AppTypography.bodyS(c.textSecondary).copyWith(
-                        fontSize: 12.5, fontWeight: FontWeight.w500),
+                      style: AppTypography.bodyS(c.textSecondary)
+                          .copyWith(fontSize: 12, fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
@@ -503,54 +1163,36 @@ class _SetupCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 40, height: 40,
-                decoration: BoxDecoration(
-                  color: c.accentIron.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: Icon(Icons.fitness_center_rounded,
-                  color: c.accentIron, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Ready to train?',
-                      style: AppTypography.titleM(c.textPrimary).copyWith(
-                        fontSize: 16, letterSpacing: -0.2),
-                    ),
-                    Text(
-                      'Set up a routine or jump straight in',
-                      style: AppTypography.bodyS(c.textSecondary).copyWith(
-                        fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          Text(
+            'Ready to lift?',
+            style: AppTypography.titleL(c.textPrimary)
+                .copyWith(fontSize: 20, letterSpacing: -0.4),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 4),
+          Text(
+            'Set up a program or jump straight in.',
+            style: AppTypography.bodyM(c.textTertiary).copyWith(fontSize: 13),
+          ),
+          const SizedBox(height: 20),
           Row(
             children: [
               Expanded(
                 child: GestureDetector(
-                  onTap: onBrowse,
+                  onTap: () {
+                    HapticFeedback.mediumImpact();
+                    onBrowse();
+                  },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    height: 48,
                     decoration: BoxDecoration(
                       color: c.accentIron,
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: Center(
                       child: Text(
                         'Browse Programs',
                         style: AppTypography.titleS(Colors.white).copyWith(
-                          fontSize: 13, fontWeight: FontWeight.w700),
+                            fontSize: 13, fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
@@ -559,19 +1201,31 @@ class _SetupCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: GestureDetector(
-                  onTap: onQuickStart,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    onQuickStart();
+                  },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    height: 48,
                     decoration: BoxDecoration(
                       color: c.surfaceHigh,
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      border: Border.all(color: c.divider),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: c.divider, width: 0.5),
                     ),
                     child: Center(
-                      child: Text(
-                        '⚡ Quick Start',
-                        style: AppTypography.titleS(c.textPrimary).copyWith(
-                          fontSize: 13, fontWeight: FontWeight.w700),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.bolt_rounded,
+                              size: 14, color: c.textSecondary),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Quick Start',
+                            style: AppTypography.titleS(c.textSecondary)
+                                .copyWith(
+                                    fontSize: 13, fontWeight: FontWeight.w700),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -585,9 +1239,9 @@ class _SetupCard extends StatelessWidget {
   }
 }
 
-// ── Last 7 Days ───────────────────────────────────────────────
-class _Last7Days extends StatelessWidget {
-  const _Last7Days({required this.dotDays, required this.c});
+// ── Weekly Consistency Strip ──────────────────────────────────
+class _WeeklyStrip extends StatelessWidget {
+  const _WeeklyStrip({required this.dotDays, required this.c});
   final List<bool> dotDays;
   final AppColors c;
 
@@ -601,125 +1255,148 @@ class _Last7Days extends StatelessWidget {
     });
     final doneCount = dotDays.where((d) => d).length;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Text(
-              'LAST 7 DAYS',
-              style: AppTypography.caption(c.textTertiary).copyWith(
-                letterSpacing: 0.8, fontWeight: FontWeight.w700, fontSize: 11),
-            ),
-            const Spacer(),
-            RichText(
-              text: TextSpan(
-                children: [
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      decoration: BoxDecoration(
+        color: c.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: c.divider.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                'CONSISTENCY',
+                style: AppTypography.caption(c.textTertiary).copyWith(
+                    letterSpacing: 0.9,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10),
+              ),
+              const Spacer(),
+              RichText(
+                text: TextSpan(children: [
                   TextSpan(
                     text: '$doneCount',
-                    style: AppTypography.bodyS(c.textPrimary).copyWith(
-                      fontWeight: FontWeight.w700, fontSize: 12),
+                    style: AppTypography.titleS(c.textPrimary)
+                        .copyWith(fontSize: 13, fontWeight: FontWeight.w700),
                   ),
                   TextSpan(
-                    text: ' of 7 days',
-                    style: AppTypography.bodyS(c.textSecondary).copyWith(
-                      fontSize: 12),
+                    text: ' / 7',
+                    style: AppTypography.bodyS(c.textTertiary)
+                        .copyWith(fontSize: 12),
                   ),
-                ],
+                ]),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: List.generate(7, (i) {
-            final done    = dotDays[i];
-            final isToday = i == dotDays.length - 1;
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: List.generate(7, (i) {
+              final done = dotDays[i];
+              final isToday = i == dotDays.length - 1;
 
-            return Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(left: i > 0 ? 8 : 0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AspectRatio(
-                      aspectRatio: 1,
-                      child: isToday && !done
-                          ? CustomPaint(
-                              painter: _DashedRectPainter(color: c.accentIron),
-                              child: const SizedBox.expand(),
-                            )
-                          : Container(
-                              decoration: BoxDecoration(
-                                color: done ? c.accentIron : c.surfaceElevated,
-                                borderRadius: BorderRadius.circular(AppRadius.sm),
-                                border: done
-                                    ? null
-                                    : Border.all(
-                                        color: c.divider.withValues(alpha: 0.7),
-                                        width: 0.5),
-                              ),
-                              child: done
-                                  ? const Icon(Icons.check_rounded,
-                                      color: Colors.white, size: 16)
-                                  : null,
-                            ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      labels[i],
-                      style: AppTypography.caption(
-                        isToday ? c.accentIron : c.textTertiary,
-                      ).copyWith(
-                        fontSize: 10,
-                        fontWeight:
-                            isToday ? FontWeight.w700 : FontWeight.w500),
-                    ),
-                  ],
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(left: i > 0 ? 6 : 0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AspectRatio(
+                        aspectRatio: 1,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: done
+                                ? c.accentIron
+                                : isToday
+                                    ? Colors.transparent
+                                    : c.surfaceHigh,
+                            border: done
+                                ? null
+                                : Border.all(
+                                    color: isToday
+                                        ? c.accentIron
+                                        : c.divider.withValues(alpha: 0.7),
+                                    width: isToday ? 1.8 : 0.5,
+                                  ),
+                          ),
+                          child: done
+                              ? const Icon(Icons.check_rounded,
+                                  color: Colors.white, size: 13)
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        labels[i],
+                        style: AppTypography.caption(
+                          isToday ? c.accentIron : c.textTertiary,
+                        ).copyWith(
+                            fontSize: 10,
+                            fontWeight:
+                                isToday ? FontWeight.w700 : FontWeight.w500),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          }),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Stats Row ─────────────────────────────────────────────────
+class _StatsRow extends StatelessWidget {
+  const _StatsRow({
+    required this.streak,
+    required this.weekVolume,
+    required this.monthCount,
+    required this.c,
+  });
+  final int streak;
+  final double weekVolume;
+  final int monthCount;
+  final AppColors c;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _StatBox(
+          value: streak > 0 ? '$streak' : '—',
+          label: 'Day Streak',
+          icon: Icons.local_fire_department_rounded,
+          highlight: streak >= 3,
+          c: c,
+        ),
+        const SizedBox(width: 8),
+        _StatBox(
+          value: WeightUnit.formatVolume(weekVolume),
+          label: 'This Week',
+          icon: Icons.fitness_center_rounded,
+          highlight: false,
+          c: c,
+        ),
+        const SizedBox(width: 8),
+        _StatBox(
+          value: '$monthCount',
+          label: 'This Month',
+          icon: Icons.calendar_today_outlined,
+          highlight: false,
+          c: c,
         ),
       ],
     );
   }
 }
 
-class _DashedRectPainter extends CustomPainter {
-  const _DashedRectPainter({required this.color});
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-
-    final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(0.75, 0.75, size.width - 1.5, size.height - 1.5),
-        const Radius.circular(AppRadius.sm),
-      ));
-
-    const dashLen = 4.0;
-    const gapLen  = 3.0;
-    for (final m in path.computeMetrics()) {
-      double d = 0;
-      while (d < m.length) {
-        canvas.drawPath(m.extractPath(d, (d + dashLen).clamp(0, m.length)), paint);
-        d += dashLen + gapLen;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_DashedRectPainter old) => old.color != color;
-}
-
+// ── Stat Box ──────────────────────────────────────────────────
 class _StatBox extends StatelessWidget {
   const _StatBox({
     required this.value,
@@ -739,36 +1416,42 @@ class _StatBox extends StatelessWidget {
     final color = highlight ? c.accentIron : c.textPrimary;
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+        padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
         decoration: BoxDecoration(
           color: c.surfaceElevated,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
             color: highlight
-                ? c.accentIron.withValues(alpha: 0.3)
-                : c.divider.withValues(alpha: 0.5),
+                ? c.accentIron.withValues(alpha: 0.22)
+                : c.divider.withValues(alpha: 0.4),
+            width: highlight ? 1.0 : 0.5,
           ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 13,
-              color: highlight ? c.accentIron : c.textTertiary),
-            const SizedBox(height: 6),
+            Icon(icon,
+                size: 14, color: highlight ? c.accentIron : c.textTertiary),
+            const SizedBox(height: 8),
             Text(
               value,
               style: AppTypography.displayM(color).copyWith(
-                fontSize: 22,
+                fontSize: 21,
                 letterSpacing: -0.8,
                 height: 1,
                 fontFeatures: [const FontFeature.tabularFigures()],
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 3),
             Text(
               label,
-              style: AppTypography.caption(c.textTertiary).copyWith(
-                fontSize: 10, letterSpacing: 0.2),
+              style: AppTypography.caption(
+                highlight
+                    ? c.accentIron.withValues(alpha: 0.65)
+                    : c.textTertiary,
+              ).copyWith(fontSize: 10.5, letterSpacing: 0.2),
             ),
           ],
         ),
@@ -796,7 +1479,7 @@ class _LastWorkoutCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => WorkoutDetailScreen(workout: workout)),
+              builder: (_) => WorkoutDetailScreen(workout: workout)),
         );
       },
       child: Container(
@@ -811,15 +1494,16 @@ class _LastWorkoutCard extends StatelessWidget {
           children: [
             // Icon
             Container(
-              width: 44, height: 44,
+              width: 46,
+              height: 46,
               decoration: BoxDecoration(
-                color: c.surfaceHigh,
+                color: c.accentIron.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: Icon(Icons.fitness_center_rounded,
-                size: 18, color: c.accentIron),
+                  size: 19, color: c.accentIron),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 13),
 
             // Info
             Expanded(
@@ -829,7 +1513,9 @@ class _LastWorkoutCard extends StatelessWidget {
                   Text(
                     workout.routineName,
                     style: AppTypography.titleM(c.textPrimary).copyWith(
-                      fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.1),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.1),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -837,23 +1523,28 @@ class _LastWorkoutCard extends StatelessWidget {
                   if (workout.exercises.isNotEmpty)
                     Text(
                       preview,
-                      style: AppTypography.bodyS(c.textTertiary).copyWith(
-                        fontSize: 11),
+                      style: AppTypography.bodyS(c.textTertiary)
+                          .copyWith(fontSize: 11),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  const SizedBox(height: 8),
-                  // Mini stats
+                  const SizedBox(height: 9),
                   Row(
                     children: [
-                      _MiniStat(icon: Icons.timer_outlined,
-                        label: workout.durationLabel, c: c),
-                      const SizedBox(width: 14),
-                      _MiniStat(icon: Icons.fitness_center_outlined,
-                        label: workout.volumeLabel, c: c),
-                      const SizedBox(width: 14),
-                      _MiniStat(icon: Icons.check_circle_outline_rounded,
-                        label: '${workout.doneSets} sets', c: c),
+                      _MiniStat(
+                          icon: Icons.timer_outlined,
+                          label: workout.durationLabel,
+                          c: c),
+                      const SizedBox(width: 12),
+                      _MiniStat(
+                          icon: Icons.fitness_center_outlined,
+                          label: workout.volumeLabel,
+                          c: c),
+                      const SizedBox(width: 12),
+                      _MiniStat(
+                          icon: Icons.check_circle_outline_rounded,
+                          label: '${workout.doneSets} sets',
+                          c: c),
                     ],
                   ),
                 ],
@@ -861,25 +1552,18 @@ class _LastWorkoutCard extends StatelessWidget {
             ),
             const SizedBox(width: 10),
 
-            // Right
+            // Date + chevron
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: c.surfaceHigh,
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                  ),
-                  child: Text(
-                    workout.relativeDate,
-                    style: AppTypography.caption(c.textTertiary).copyWith(
-                      fontSize: 10),
-                  ),
+                Text(
+                  workout.relativeDate,
+                  style: AppTypography.caption(c.textTertiary)
+                      .copyWith(fontSize: 10),
                 ),
                 const SizedBox(height: 14),
                 Icon(Icons.chevron_right_rounded,
-                  size: 18, color: c.textTertiary),
+                    size: 18, color: c.textTertiary.withValues(alpha: 0.5)),
               ],
             ),
           ],
@@ -904,8 +1588,8 @@ class _MiniStat extends StatelessWidget {
         const SizedBox(width: 3),
         Text(
           label,
-          style: AppTypography.caption(c.textSecondary).copyWith(
-            fontSize: 11, fontWeight: FontWeight.w500),
+          style: AppTypography.caption(c.textSecondary)
+              .copyWith(fontSize: 11, fontWeight: FontWeight.w500),
         ),
       ],
     );
@@ -932,8 +1616,8 @@ class _PRChip extends StatelessWidget {
         builder: (_) => PRDetailScreen(exerciseName: exercise),
       )),
       child: Container(
-        width: 138,
-        padding: const EdgeInsets.fromLTRB(13, 13, 13, 11),
+        width: 140,
+        padding: const EdgeInsets.fromLTRB(13, 13, 13, 12),
         decoration: BoxDecoration(
           color: c.surfaceElevated,
           borderRadius: BorderRadius.circular(AppRadius.md),
@@ -944,13 +1628,12 @@ class _PRChip extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.emoji_events_rounded,
-                  size: 14, color: c.accentIron),
+                Icon(Icons.emoji_events_rounded, size: 14, color: c.accentIron),
                 const Spacer(),
                 Text(
                   date,
-                  style: AppTypography.caption(c.textTertiary).copyWith(
-                    fontSize: 9),
+                  style: AppTypography.caption(c.textTertiary)
+                      .copyWith(fontSize: 9.5),
                 ),
               ],
             ),
@@ -958,7 +1641,7 @@ class _PRChip extends StatelessWidget {
             Text(
               value,
               style: AppTypography.displayM(c.textPrimary).copyWith(
-                fontSize: 22,
+                fontSize: 21,
                 letterSpacing: -0.6,
                 height: 1,
                 fontFeatures: [const FontFeature.tabularFigures()],
@@ -970,13 +1653,14 @@ class _PRChip extends StatelessWidget {
                 Expanded(
                   child: Text(
                     exercise,
-                    style: AppTypography.bodyS(c.textSecondary).copyWith(fontSize: 11),
+                    style: AppTypography.bodyS(c.textSecondary)
+                        .copyWith(fontSize: 11),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 Icon(Icons.chevron_right_rounded,
-                  size: 13, color: c.textSecondary),
+                    size: 12, color: c.textTertiary),
               ],
             ),
           ],
@@ -1003,29 +1687,32 @@ class _SkeletonLastSession extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 44, height: 44,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: c.accentIron.withValues(alpha: 0.10),
+              color: c.surfaceHigh,
               borderRadius: BorderRadius.circular(AppRadius.sm),
+              border: Border.all(
+                  color: c.divider.withValues(alpha: 0.5), width: 0.5),
             ),
             child: Icon(Icons.fitness_center_rounded,
-                size: 20, color: c.accentIron.withValues(alpha: 0.6)),
+                size: 19, color: c.textTertiary),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 13),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'No workouts yet',
-                  style: AppTypography.titleS(c.textPrimary).copyWith(
-                    fontSize: 14, fontWeight: FontWeight.w600),
+                  style: AppTypography.titleS(c.textPrimary)
+                      .copyWith(fontSize: 14, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  'Complete your first session to see it here',
-                  style: AppTypography.bodyS(c.textTertiary).copyWith(
-                    fontSize: 11),
+                  'Complete your first session to see it here.',
+                  style: AppTypography.bodyS(c.textTertiary)
+                      .copyWith(fontSize: 11),
                 ),
               ],
             ),
@@ -1056,13 +1743,16 @@ class _EmptyPRCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 38, height: 38,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
                 color: c.surfaceHigh,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
+                border: Border.all(
+                    color: c.divider.withValues(alpha: 0.6), width: 0.5),
               ),
               child: Icon(Icons.emoji_events_outlined,
-                size: 18, color: c.textTertiary),
+                  size: 18, color: c.textTertiary),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -1071,20 +1761,20 @@ class _EmptyPRCard extends StatelessWidget {
                 children: [
                   Text(
                     'No records yet',
-                    style: AppTypography.titleS(c.textPrimary).copyWith(
-                      fontSize: 14),
+                    style: AppTypography.titleS(c.textPrimary)
+                        .copyWith(fontSize: 14),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Finish a workout to set your first PR',
-                    style: AppTypography.bodyS(c.textTertiary).copyWith(
-                      fontSize: 11),
+                    'Finish a workout to set your first PR.',
+                    style: AppTypography.bodyS(c.textTertiary)
+                        .copyWith(fontSize: 11),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios_rounded,
-              size: 13, color: c.textTertiary),
+            Icon(Icons.chevron_right_rounded,
+                size: 18, color: c.textTertiary.withValues(alpha: 0.5)),
           ],
         ),
       ),

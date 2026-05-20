@@ -1,3 +1,5 @@
+// ignore_for_file: dead_code, unused_element, unused_import
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
@@ -8,15 +10,22 @@ import '../services/workout_history_store.dart';
 import '../utils/weight_unit.dart';
 import '../widgets/set_row.dart' show SetType;
 import '../widgets/shared_widgets.dart';
+import '../widgets/velt_redesign_widgets.dart';
 import '../models/workout.dart' show CompletedWorkout, WorkoutExercise;
 import 'exercise_detail_screen.dart';
 
 class WorkoutHistoryScreen extends StatelessWidget {
-  const WorkoutHistoryScreen({super.key});
+  const WorkoutHistoryScreen({super.key, this.onStartWorkout});
+
+  /// When provided, completed workouts can be repeated as a new session.
+  final void Function(String name, List<WorkoutExercise> exercises)?
+      onStartWorkout;
 
   @override
   Widget build(BuildContext context) {
     final c = Theme.of(context).extension<AppColors>()!;
+
+    return _FreshWorkoutHistoryScreen(onStartWorkout: onStartWorkout);
 
     return Scaffold(
       backgroundColor: c.surface,
@@ -30,15 +39,15 @@ class WorkoutHistoryScreen extends StatelessWidget {
                 // Header
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.md, AppSpacing.lg,
-                      AppSpacing.md, AppSpacing.md),
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.md,
+                        AppSpacing.lg, AppSpacing.md, AppSpacing.md),
                     child: Row(
                       children: [
                         GestureDetector(
                           onTap: () => Navigator.pop(context),
                           child: Container(
-                            width: 36, height: 36,
+                            width: 36,
+                            height: 36,
                             decoration: BoxDecoration(
                               color: c.surfaceElevated,
                               borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -71,8 +80,8 @@ class WorkoutHistoryScreen extends StatelessWidget {
                   // Stats strip
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                       child: _StatsStrip(history: history, c: c),
                     ),
                   ),
@@ -81,13 +90,134 @@ class WorkoutHistoryScreen extends StatelessWidget {
                   // Grouped workout list
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.md, 0, AppSpacing.md, 80),
+                        AppSpacing.md, 0, AppSpacing.md, 80),
                     sliver: _GroupedHistoryList(history: history, c: c),
                   ),
                 ],
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _FreshWorkoutHistoryScreen extends StatelessWidget {
+  const _FreshWorkoutHistoryScreen({this.onStartWorkout});
+  final void Function(String name, List<WorkoutExercise> exercises)?
+      onStartWorkout;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<List<CompletedWorkout>>(
+      valueListenable: WorkoutHistoryStore.history,
+      builder: (context, history, _) {
+        final totalVolume =
+            history.fold<double>(0, (sum, w) => sum + w.totalVolume);
+        final totalSets = history.fold<int>(0, (sum, w) => sum + w.doneSets);
+        final avgMin = history.isEmpty
+            ? 0
+            : history.fold<int>(0, (sum, w) => sum + w.elapsedSecs) ~/
+                history.length ~/
+                60;
+
+        return VeltScreen(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              VeltTopBar(
+                title: 'Workout history',
+                subtitle: '${history.length} completed sessions',
+                onBack: () => Navigator.pop(context),
+                trailing: VeltPill('${history.length}', accent: true),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: VeltMetric(
+                      value: '${history.length}',
+                      label: 'workouts',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: VeltMetric(
+                      value: WeightUnit.formatVolume(totalVolume),
+                      label: 'volume',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: VeltMetric(value: '$avgMin m', label: 'avg'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              VeltPanel(
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: VeltLabel('Lifetime sets'),
+                    ),
+                    VeltPill('$totalSets done', success: totalSets > 0),
+                  ],
+                ),
+              ),
+              const VeltSection(label: 'Recent sessions'),
+              if (history.isEmpty)
+                const VeltPanel(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 28),
+                    child: Center(child: VeltLabel('No workouts yet')),
+                  ),
+                )
+              else
+                for (final workout in history.take(24)) ...[
+                  _FreshWorkoutHistoryItem(
+                      workout: workout, onStartWorkout: onStartWorkout),
+                  const SizedBox(height: 8),
+                ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _FreshWorkoutHistoryItem extends StatelessWidget {
+  const _FreshWorkoutHistoryItem({
+    required this.workout,
+    this.onStartWorkout,
+  });
+  final CompletedWorkout workout;
+  final void Function(String name, List<WorkoutExercise> exercises)?
+      onStartWorkout;
+
+  @override
+  Widget build(BuildContext context) {
+    final d = workout.completedAt;
+    final subtitle =
+        '${_freshMonth(d.month)} ${d.day} · ${workout.durationLabel} · ${workout.doneSets} sets';
+    return VeltRowCard(
+      icon: workout.routineName.characters.first.toUpperCase(),
+      title: workout.routineName,
+      subtitle: subtitle,
+      trailing: VeltPill(workout.volumeLabel, accent: true),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => WorkoutDetailScreen(
+            workout: workout,
+            onRepeat: onStartWorkout == null
+                ? null
+                : (src) => onStartWorkout!(
+                      src.routineName,
+                      WorkoutHistoryStore.templateFromCompleted(src),
+                    ),
+          ),
         ),
       ),
     );
@@ -178,8 +308,7 @@ class _StripDivider extends StatelessWidget {
   final AppColors c;
 
   @override
-  Widget build(BuildContext context) =>
-      const SizedBox(width: 8);
+  Widget build(BuildContext context) => const SizedBox(width: 8);
 }
 
 // ── Grouped history list ──────────────────────────────────────
@@ -237,11 +366,13 @@ class _GroupedHistoryList extends StatelessWidget {
                   ],
                 ),
               ),
-              ...List.generate(workouts.length, (wi) => Padding(
-                padding: EdgeInsets.only(
-                  bottom: wi < workouts.length - 1 ? 10 : 0),
-                child: _WorkoutHistoryCard(workout: workouts[wi], c: c),
-              )),
+              ...List.generate(
+                  workouts.length,
+                  (wi) => Padding(
+                        padding: EdgeInsets.only(
+                            bottom: wi < workouts.length - 1 ? 10 : 0),
+                        child: _WorkoutHistoryCard(workout: workouts[wi], c: c),
+                      )),
             ],
           );
         },
@@ -250,8 +381,20 @@ class _GroupedHistoryList extends StatelessWidget {
   }
 
   static String _monthKey(DateTime d) {
-    const months = ['January','February','March','April','May','June',
-                    'July','August','September','October','November','December'];
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
+    ];
     return '${months[d.month - 1]} ${d.year}';
   }
 }
@@ -295,8 +438,8 @@ class _WorkoutHistoryCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     w.routineName,
-                    style: AppTypography.titleM(c.textPrimary).copyWith(
-                      fontSize: 15, letterSpacing: -0.2),
+                    style: AppTypography.titleM(c.textPrimary)
+                        .copyWith(fontSize: 15, letterSpacing: -0.2),
                   ),
                 ),
                 Column(
@@ -304,13 +447,13 @@ class _WorkoutHistoryCard extends StatelessWidget {
                   children: [
                     Text(
                       dayLabel,
-                      style: AppTypography.caption(c.textSecondary).copyWith(
-                        fontSize: 10),
+                      style: AppTypography.caption(c.textSecondary)
+                          .copyWith(fontSize: 10),
                     ),
                     Text(
                       timeLabel,
-                      style: AppTypography.caption(c.textTertiary).copyWith(
-                        fontSize: 10),
+                      style: AppTypography.caption(c.textTertiary)
+                          .copyWith(fontSize: 10),
                     ),
                   ],
                 ),
@@ -319,9 +462,13 @@ class _WorkoutHistoryCard extends StatelessWidget {
             const SizedBox(height: 10),
             Row(
               children: [
-                _InlineTag(icon: Icons.timer_outlined, label: w.durationLabel, c: c),
+                _InlineTag(
+                    icon: Icons.timer_outlined, label: w.durationLabel, c: c),
                 const SizedBox(width: 6),
-                _InlineTag(icon: Icons.fitness_center_outlined, label: w.volumeLabel, c: c),
+                _InlineTag(
+                    icon: Icons.fitness_center_outlined,
+                    label: w.volumeLabel,
+                    c: c),
                 const SizedBox(width: 6),
                 _InlineTag(
                   icon: Icons.check_circle_outline_rounded,
@@ -340,13 +487,25 @@ class _WorkoutHistoryCard extends StatelessWidget {
   }
 
   static String _dayName(int d) {
-    const n = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const n = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return n[(d - 1).clamp(0, 6)];
   }
 
   static String _monthShort(int m) {
-    const n = ['Jan','Feb','Mar','Apr','May','Jun',
-               'Jul','Aug','Sep','Oct','Nov','Dec'];
+    const n = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     return n[(m - 1).clamp(0, 11)];
   }
 }
@@ -367,9 +526,13 @@ List<({String exercise, double weight, int reps})> _prsFor(CompletedWorkout w) {
   }
   final result = <({String exercise, double weight, int reps})>[];
   for (final ex in w.exercises) {
-    double best = 0; int bestR = 0;
+    double best = 0;
+    int bestR = 0;
     for (final s in ex.sets) {
-      if (s.isDone && s.weight > best) { best = s.weight; bestR = s.reps; }
+      if (s.isDone && s.weight > best) {
+        best = s.weight;
+        bestR = s.reps;
+      }
     }
     if (best > 0 && best > (prevBests[ex.name] ?? 0)) {
       result.add((exercise: ex.name, weight: best, reps: bestR));
@@ -378,10 +541,35 @@ List<({String exercise, double weight, int reps})> _prsFor(CompletedWorkout w) {
   return result;
 }
 
+String _freshMonth(int m) {
+  const names = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return names[(m - 1).clamp(0, 11)];
+}
+
 // ── Workout Detail Screen ─────────────────────────────────────
 class WorkoutDetailScreen extends StatefulWidget {
-  const WorkoutDetailScreen({super.key, required this.workout});
+  const WorkoutDetailScreen({
+    super.key,
+    required this.workout,
+    this.onRepeat,
+  });
   final CompletedWorkout workout;
+  /// Optional — when provided, a "Repeat workout" CTA appears. Called with
+  /// the source workout so the caller can build a fresh template from it.
+  final void Function(CompletedWorkout source)? onRepeat;
 
   @override
   State<WorkoutDetailScreen> createState() => _WorkoutDetailScreenState();
@@ -446,8 +634,8 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                     .copyWith(fontSize: 14, height: 1.5),
                 decoration: InputDecoration(
                   hintText: 'How did the session feel?',
-                  hintStyle:
-                      AppTypography.bodyS(c.textTertiary).copyWith(fontSize: 14),
+                  hintStyle: AppTypography.bodyS(c.textTertiary)
+                      .copyWith(fontSize: 14),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                     borderSide: BorderSide(color: c.divider),
@@ -498,6 +686,21 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     final prs = _prsFor(w);
     final prCount = prs.length;
 
+    return _FreshWorkoutDetailScreen(
+      workout: w,
+      dateText: '$dateStr · $timeStr',
+      prs: prs,
+      note: _note,
+      onEditNote: () => _editNote(c),
+      onRepeat: widget.onRepeat == null
+          ? null
+          : () {
+              HapticFeedback.mediumImpact();
+              Navigator.of(context).pop();
+              widget.onRepeat!(w);
+            },
+    );
+
     return Scaffold(
       backgroundColor: c.surface,
       body: SafeArea(
@@ -506,11 +709,8 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
           children: [
             // ── Sticky header ──────────────────────────
             Container(
-              padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.screenH,
-                  AppSpacing.sm,
-                  AppSpacing.screenH,
-                  AppSpacing.md),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.screenH,
+                  AppSpacing.sm, AppSpacing.screenH, AppSpacing.md),
               decoration: BoxDecoration(
                 color: c.surface,
                 border: Border(
@@ -547,8 +747,8 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                   const SizedBox(height: 4),
                   Text(
                     w.routineName,
-                    style: AppTypography.displayL(c.textPrimary)
-                        .copyWith(fontSize: 26, letterSpacing: -0.8, height: 1.1),
+                    style: AppTypography.displayL(c.textPrimary).copyWith(
+                        fontSize: 26, letterSpacing: -0.8, height: 1.1),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -572,9 +772,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                     Row(children: [
                       Expanded(
                           child: _DetailStatTile(
-                              label: 'Duration',
-                              value: w.durationLabel,
-                              c: c)),
+                              label: 'Duration', value: w.durationLabel, c: c)),
                       const SizedBox(width: 8),
                       Expanded(
                           child: _DetailStatTile(
@@ -584,9 +782,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                     Row(children: [
                       Expanded(
                           child: _DetailStatTile(
-                              label: 'Sets',
-                              value: '${w.doneSets}',
-                              c: c)),
+                              label: 'Sets', value: '${w.doneSets}', c: c)),
                       const SizedBox(width: 8),
                       Expanded(
                           child: _DetailStatTile(
@@ -605,8 +801,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: c.surfaceHigh,
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.full),
+                            borderRadius: BorderRadius.circular(AppRadius.full),
                             border: Border.all(
                                 color: c.divider.withValues(alpha: 0.5)),
                           ),
@@ -655,8 +850,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               decoration: BoxDecoration(
                                 color: c.accentIron.withValues(alpha: 0.08),
                                 border: Border.all(
-                                    color:
-                                        c.accentIron.withValues(alpha: 0.3)),
+                                    color: c.accentIron.withValues(alpha: 0.3)),
                                 borderRadius:
                                     BorderRadius.circular(AppRadius.md),
                               ),
@@ -677,10 +871,12 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(pr.exercise,
-                                        style: AppTypography.bodyS(c.textPrimary)
-                                            .copyWith(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w700)),
+                                        style:
+                                            AppTypography.bodyS(c.textPrimary)
+                                                .copyWith(
+                                                    fontSize: 13,
+                                                    fontWeight:
+                                                        FontWeight.w700)),
                                     const SizedBox(height: 2),
                                     Text(
                                       '${WeightUnit.format(pr.weight)} × ${pr.reps}',
@@ -825,6 +1021,162 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
 }
 
 // ── 2×2 stat tile (design-matching) ──────────────────────────
+class _FreshWorkoutDetailScreen extends StatelessWidget {
+  const _FreshWorkoutDetailScreen({
+    required this.workout,
+    required this.dateText,
+    required this.prs,
+    required this.note,
+    required this.onEditNote,
+    this.onRepeat,
+  });
+
+  final CompletedWorkout workout;
+  final String dateText;
+  final List<({String exercise, double weight, int reps})> prs;
+  final String note;
+  final VoidCallback onEditNote;
+  final VoidCallback? onRepeat;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).extension<AppColors>()!;
+    final doneExercises =
+        workout.exercises.where((ex) => ex.sets.any((set) => set.isDone));
+
+    return VeltScreen(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          VeltTopBar(
+            title: workout.routineName,
+            subtitle: dateText,
+            onBack: () => Navigator.pop(context),
+            trailing: VeltPill('${prs.length} PR', accent: prs.isNotEmpty),
+          ),
+          const SizedBox(height: 14),
+          VeltPanel(
+            hero: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const VeltLabel('Session result'),
+                const SizedBox(height: 10),
+                Text(
+                  workout.volumeLabel,
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontSize: 34,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: VeltMetric(
+                        value: workout.durationLabel,
+                        label: 'duration',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: VeltMetric(
+                        value: '${workout.doneSets}',
+                        label: 'sets',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: VeltMetric(
+                        value: workout.avgRestSecs > 0
+                            ? '${workout.avgRestSecs}s'
+                            : '-',
+                        label: 'rest',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (prs.isNotEmpty) ...[
+            const VeltSection(label: 'Personal records'),
+            for (final pr in prs.take(5)) ...[
+              VeltRowCard(
+                icon: 'PR',
+                title: pr.exercise,
+                subtitle: '${WeightUnit.format(pr.weight)} x ${pr.reps}',
+                trailing: const VeltPill('new', success: true),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ],
+          VeltSection(
+            label: 'Session note',
+            trailing: VeltPill(note.isEmpty ? 'Add' : 'Edit', accent: true),
+          ),
+          GestureDetector(
+            onTap: onEditNote,
+            child: VeltPanel(
+              child: Text(
+                note.isEmpty ? 'Tap to add how the workout felt.' : note,
+                style: TextStyle(
+                  color: c.textSecondary,
+                  fontSize: 13,
+                  height: 1.45,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          const VeltSection(label: 'Exercises'),
+          for (final ex in doneExercises) ...[
+            _FreshWorkoutExerciseSummary(exercise: ex),
+            const SizedBox(height: 8),
+          ],
+          if (onRepeat != null) ...[
+            const SizedBox(height: 16),
+            VeltButton(
+              label: 'Repeat this workout',
+              onTap: onRepeat,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _FreshWorkoutExerciseSummary extends StatelessWidget {
+  const _FreshWorkoutExerciseSummary({required this.exercise});
+  final WorkoutExercise exercise;
+
+  @override
+  Widget build(BuildContext context) {
+    final done = exercise.sets.where((set) => set.isDone).toList();
+    final summary = done
+        .map((set) =>
+            '${set.weight == 0 ? 'BW' : WeightUnit.format(set.weight)} x ${set.reps}')
+        .join(' · ');
+
+    return VeltRowCard(
+      icon: exercise.name.characters.first.toUpperCase(),
+      title: exercise.name,
+      subtitle: summary.isEmpty ? '${done.length} sets' : summary,
+      trailing: VeltPill(exercise.muscle),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ExerciseDetailScreen(exerciseName: exercise.name),
+        ),
+      ),
+    );
+  }
+}
+
 class _DetailStatTile extends StatelessWidget {
   const _DetailStatTile({
     required this.label,
@@ -842,9 +1194,8 @@ class _DetailStatTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: accent
-            ? c.accentIron.withValues(alpha: 0.08)
-            : c.surfaceElevated,
+        color:
+            accent ? c.accentIron.withValues(alpha: 0.08) : c.surfaceElevated,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
           color: accent ? c.accentIron : c.divider.withValues(alpha: 0.5),
@@ -855,18 +1206,20 @@ class _DetailStatTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(value,
-            style: AppTypography.displayM(
-              accent ? c.accentIron : c.textPrimary,
-            ).copyWith(
-              fontSize: 24,
-              letterSpacing: -0.5,
-              height: 1,
-              fontFeatures: [const FontFeature.tabularFigures()],
-            )),
+              style: AppTypography.displayM(
+                accent ? c.accentIron : c.textPrimary,
+              ).copyWith(
+                fontSize: 24,
+                letterSpacing: -0.5,
+                height: 1,
+                fontFeatures: [const FontFeature.tabularFigures()],
+              )),
           const SizedBox(height: 6),
           Text(label.toUpperCase(),
-            style: AppTypography.caption(c.textTertiary).copyWith(
-              fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.7)),
+              style: AppTypography.caption(c.textTertiary).copyWith(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.7)),
         ],
       ),
     );
@@ -908,40 +1261,45 @@ class _ExerciseDetailCard extends StatelessWidget {
               behavior: HitTestBehavior.opaque,
               onTap: () {
                 HapticFeedback.selectionClick();
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) =>
-                    ExerciseDetailScreen(exerciseName: ex.name)));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            ExerciseDetailScreen(exerciseName: ex.name)));
               },
               child: Container(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
                 decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(
-                    color: c.divider.withValues(alpha: 0.4))),
+                  border: Border(
+                      bottom:
+                          BorderSide(color: c.divider.withValues(alpha: 0.4))),
                 ),
                 child: Row(children: [
-                  Expanded(child: Column(
+                  Expanded(
+                      child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(ex.name,
-                        style: AppTypography.titleS(c.textPrimary).copyWith(
-                          fontSize: 14, fontWeight: FontWeight.w700,
-                          letterSpacing: -0.1)),
+                          style: AppTypography.titleS(c.textPrimary).copyWith(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.1)),
                       const SizedBox(height: 4),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 7, vertical: 2),
+                            horizontal: 7, vertical: 2),
                         decoration: BoxDecoration(
                           color: c.surfaceHigh,
                           borderRadius: BorderRadius.circular(AppRadius.full),
                         ),
                         child: Text(ex.muscle,
-                          style: AppTypography.caption(c.textTertiary)
-                              .copyWith(fontSize: 10)),
+                            style: AppTypography.caption(c.textTertiary)
+                                .copyWith(fontSize: 10)),
                       ),
                     ],
                   )),
                   Icon(Icons.chevron_right_rounded,
-                    size: 14, color: c.accentIron.withValues(alpha: 0.5)),
+                      size: 14, color: c.accentIron.withValues(alpha: 0.5)),
                 ]),
               ),
             ),
@@ -957,71 +1315,76 @@ class _ExerciseDetailCard extends StatelessWidget {
               switch (s.type) {
                 case SetType.warmup:
                   badge = Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 5, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                     decoration: BoxDecoration(
                       color: c.accentIron.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(AppRadius.full),
                     ),
-                    child: Text('W', textAlign: TextAlign.center,
-                      style: AppTypography.caption(c.accentIron).copyWith(
-                        fontSize: 9, fontWeight: FontWeight.w700)),
+                    child: Text('W',
+                        textAlign: TextAlign.center,
+                        style: AppTypography.caption(c.accentIron).copyWith(
+                            fontSize: 9, fontWeight: FontWeight.w700)),
                   );
                 case SetType.drop:
                   badge = Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 5, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                     decoration: BoxDecoration(
                       color: c.textTertiary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(AppRadius.full),
                     ),
-                    child: Text('D', textAlign: TextAlign.center,
-                      style: AppTypography.caption(c.textTertiary).copyWith(
-                        fontSize: 9, fontWeight: FontWeight.w700)),
+                    child: Text('D',
+                        textAlign: TextAlign.center,
+                        style: AppTypography.caption(c.textTertiary).copyWith(
+                            fontSize: 9, fontWeight: FontWeight.w700)),
                   );
                 case SetType.failure:
                   badge = Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 5, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                     decoration: BoxDecoration(
                       color: c.textTertiary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(AppRadius.full),
                     ),
-                    child: Text('F', textAlign: TextAlign.center,
-                      style: AppTypography.caption(c.textTertiary).copyWith(
-                        fontSize: 9, fontWeight: FontWeight.w700)),
+                    child: Text('F',
+                        textAlign: TextAlign.center,
+                        style: AppTypography.caption(c.textTertiary).copyWith(
+                            fontSize: 9, fontWeight: FontWeight.w700)),
                   );
                 case SetType.normal:
                   normalIdx++;
-                  badge = Text('$normalIdx', textAlign: TextAlign.center,
-                    style: AppTypography.bodyS(c.textSecondary).copyWith(
-                      fontSize: 13, fontWeight: FontWeight.w700));
+                  badge = Text('$normalIdx',
+                      textAlign: TextAlign.center,
+                      style: AppTypography.bodyS(c.textSecondary)
+                          .copyWith(fontSize: 13, fontWeight: FontWeight.w700));
               }
 
               return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 9),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                 decoration: BoxDecoration(
                   color: isPR
                       ? c.accentIron.withValues(alpha: 0.06)
                       : Colors.transparent,
                   border: i < doneSets.length - 1
-                      ? Border(bottom: BorderSide(
-                          color: c.divider.withValues(alpha: 0.4),
-                          width: 0.5))
+                      ? Border(
+                          bottom: BorderSide(
+                              color: c.divider.withValues(alpha: 0.4),
+                              width: 0.5))
                       : null,
                 ),
                 child: Row(children: [
-                  SizedBox(width: 32,
-                    child: Center(child: badge)),
+                  SizedBox(width: 32, child: Center(child: badge)),
                   Expanded(
                     child: Text(
                       s.weight > 0
                           ? '${WeightUnit.format(s.weight)} × ${s.reps}'
                           : 'BW × ${s.reps}',
                       style: AppTypography.bodyS(c.textPrimary).copyWith(
-                        fontSize: 13, fontWeight: FontWeight.w500,
-                        fontFeatures: [const FontFeature.tabularFigures()]),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          fontFeatures: [const FontFeature.tabularFigures()]),
                     ),
                   ),
                   isPR
@@ -1040,12 +1403,14 @@ class _ExerciseDetailCard extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
                 decoration: BoxDecoration(
                   color: c.surfaceHigh,
-                  border: Border(top: BorderSide(
-                    color: c.divider.withValues(alpha: 0.4))),
+                  border: Border(
+                      top: BorderSide(color: c.divider.withValues(alpha: 0.4))),
                 ),
                 child: Text('"${ex.notes}"',
-                  style: AppTypography.bodyS(c.textTertiary).copyWith(
-                    fontSize: 11, fontStyle: FontStyle.italic, height: 1.4)),
+                    style: AppTypography.bodyS(c.textTertiary).copyWith(
+                        fontSize: 11,
+                        fontStyle: FontStyle.italic,
+                        height: 1.4)),
               ),
           ],
         ),
@@ -1097,7 +1462,8 @@ class _EmptyHistory extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Container(
-          width: 72, height: 72,
+          width: 72,
+          height: 72,
           decoration: BoxDecoration(
             color: c.surfaceElevated,
             shape: BoxShape.circle,

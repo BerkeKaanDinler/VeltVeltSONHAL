@@ -1,0 +1,55 @@
+{
+  "@@locale": "en",
+
+  "tabHome": "Home",
+  "tabTrain": "Train",
+  "tabNutrition": "Nutrition",
+  "tabProgress": "Progress",
+  "tabProfile": "Profile",
+
+  "actionStart": "Start",
+  "actionStartWorkout": "Start workout",
+  "actionFinish": "Finish",
+  "actionContinue": "Continue",
+  "actionCancel": "Cancel",
+  "actionSave": "Save",
+  "actionDelete": "Delete",
+  "actionAdd": "Add",
+  "actionEdit": "Edit",
+  "actionRetry": "Retry",
+  "actionSkip": "Skip",
+  "actionBack": "Back",
+
+  "homeTodayPlan": "Today's plan",
+  "homeStartWorkout": "Start workout",
+  "homeQuickAccess": "Quick access",
+  "homeRepeatSession": "Repeat a session",
+  "homeLastWorkout": "Last workout",
+  "homeEmpty": "Empty",
+
+  "trainExercises": "Exercises",
+  "trainPrograms": "Programs",
+  "trainRoutines": "Routines",
+  "trainAddSet": "Add Set",
+  "trainAddExercise": "Add exercise",
+  "trainWarmup": "Warmup",
+  "trainRest": "Rest",
+
+  "profileSignInTitle": "Sign in to sync",
+  "profileSignInSub": "Backup workouts, switch devices, never lose data",
+  "profileSignOut": "Sign out",
+  "profilePro": "PRO",
+  "profileFree": "FREE",
+
+  "paywallStartTrial": "Start 7-day free trial",
+  "paywallRestore": "Restore purchases",
+  "paywallContinueFree": "Continue with Free",
+
+  "errorGeneric": "Something went wrong. Please try again.",
+  "errorOffline": "You're offline.",
+
+  "weightKg": "kg",
+  "weightLb": "lb",
+  "unitsKilograms": "Kilograms",
+  "unitsPounds": "Pounds"
+}

@@ -16,6 +16,7 @@ class SetRowData {
     this.reps   = 0,
     this.prev,
     this.isDone = false,
+    this.rpe,
   });
 
   final int      index;
@@ -24,6 +25,8 @@ class SetRowData {
   final int      reps;
   final ({double weight, int reps})? prev;
   final bool     isDone;
+  /// RPE (Rate of Perceived Exertion), 6.0–10.0. Optional.
+  final double?  rpe;
 
   Map<String, dynamic> toJson() => {
     'index':  index,
@@ -32,6 +35,7 @@ class SetRowData {
     'reps':   reps,
     'isDone': isDone,
     if (prev != null) 'prev': {'weight': prev!.weight, 'reps': prev!.reps},
+    if (rpe != null) 'rpe': rpe,
   };
 
   factory SetRowData.fromJson(Map<String, dynamic> j) => SetRowData(
@@ -40,6 +44,7 @@ class SetRowData {
     weight: (j['weight'] as num).toDouble(),
     reps:   j['reps']   as int,
     isDone: j['isDone'] as bool? ?? false,
+    rpe:    (j['rpe'] as num?)?.toDouble(),
     prev: j['prev'] == null ? null : (
       weight: (j['prev']['weight'] as num).toDouble(),
       reps:   j['prev']['reps']   as int,
@@ -56,6 +61,7 @@ class SetRow extends StatefulWidget {
     this.onWeightChanged,
     this.onRepsChanged,
     this.onTypeChanged,
+    this.onRpeChanged,
     this.prWeight,
   });
 
@@ -65,6 +71,7 @@ class SetRow extends StatefulWidget {
   final void Function(double weight)? onWeightChanged;
   final void Function(int reps)?    onRepsChanged;
   final void Function(SetType type)? onTypeChanged;
+  final void Function(double? rpe)? onRpeChanged;
   final double? prWeight;
 
   @override
@@ -165,6 +172,126 @@ class _SetRowState extends State<SetRow>
     }
   }
 
+  void _showRpeSheet(BuildContext context) {
+    HapticFeedback.selectionClick();
+    final c = Theme.of(context).extension<AppColors>()!;
+    const options = [6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0];
+    final descs = <double, String>{
+      6.0: 'Easy — 4 reps left in tank',
+      7.0: 'Moderate — 3 reps left',
+      8.0: 'Hard — 2 reps left',
+      8.5: 'Very hard — 1.5 reps left',
+      9.0: 'Very hard — 1 rep left',
+      9.5: 'Near max — half rep left',
+      10.0: 'Max effort — no reps left',
+    };
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: BoxDecoration(
+          color: c.surfaceElevated,
+          borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.lg)),
+        ),
+        padding: EdgeInsets.fromLTRB(
+            AppSpacing.md, 0, AppSpacing.md,
+            MediaQuery.of(context).padding.bottom + AppSpacing.md),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 16),
+              width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: c.divider,
+                borderRadius: BorderRadius.circular(AppRadius.full),
+              ),
+            ),
+            Text('Rate of Perceived Exertion',
+                style: AppTypography.titleM(c.textPrimary).copyWith(
+                    fontSize: 17, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 4),
+            Text(
+              widget.data.rpe == null
+                  ? 'Tap a value — how hard was this set?'
+                  : descs[widget.data.rpe!] ??
+                      descs.entries
+                          .lastWhere((e) => e.key <= widget.data.rpe!,
+                              orElse: () => descs.entries.first)
+                          .value,
+              textAlign: TextAlign.center,
+              style: AppTypography.bodyS(c.textTertiary)
+                  .copyWith(fontSize: 12, height: 1.4),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              alignment: WrapAlignment.center,
+              children: [
+                for (final v in options)
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      widget.onRpeChanged?.call(v);
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      width: 54,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: widget.data.rpe == v
+                            ? c.warningAmber.withValues(alpha: .2)
+                            : c.surfaceHigh,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: widget.data.rpe == v
+                              ? c.warningAmber
+                              : c.divider,
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(1),
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          color: widget.data.rpe == v
+                              ? c.warningAmber
+                              : c.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            if (widget.data.rpe != null) ...[
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  widget.onRpeChanged?.call(null);
+                  Navigator.pop(context);
+                },
+                child: Text('Clear RPE',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      color: c.errorRose,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                    )),
+              ),
+            ],
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showPlateCalc(BuildContext context) {
     HapticFeedback.selectionClick();
     showModalBottomSheet<void>(
@@ -175,56 +302,137 @@ class _SetRowState extends State<SetRow>
   }
 
   Widget _buildInfoRow(BuildContext context, AppColors c) {
+    final isKg = PrefsService.unit == 'kg';
+    final smallStep = isKg ? 2.5 : 5.0;
+    final bigStep = isKg ? 5.0 : 10.0;
     final rm = _estimate1RM();
+
     return Padding(
-      padding: const EdgeInsets.only(top: 5),
+      padding: const EdgeInsets.only(top: 8),
       child: Row(
         children: [
-          const SizedBox(width: 32),
-          Expanded(
-            child: rm != null
-                ? RichText(
-                    text: TextSpan(children: [
-                      TextSpan(
-                        text: 'Est. 1RM  ',
-                        style: TextStyle(
-                          fontSize: 10, color: c.textTertiary,
-                          fontFeatures: const [FontFeature.tabularFigures()]),
-                      ),
-                      TextSpan(
-                        text: _format1RM(rm),
-                        style: TextStyle(
-                          fontSize: 10, fontWeight: FontWeight.w600,
-                          color: c.textTertiary,
-                          fontFeatures: const [FontFeature.tabularFigures()]),
-                      ),
-                    ]),
-                  )
-                : const SizedBox.shrink(),
+          const SizedBox(width: 36),
+          // Quick adjust chips for WEIGHT
+          _QuickChip(
+            label: '−${_fmtStep(smallStep)}',
+            onTap: () {
+              HapticFeedback.selectionClick();
+              final nv = (_weight - smallStep).clamp(0.0, 9999.0);
+              setState(() => _weight = nv);
+              widget.onWeightChanged?.call(nv);
+            },
+            c: c,
           ),
-          GestureDetector(
-            onTap: () => _showPlateCalc(context),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.fitness_center_rounded,
-                    size: 11, color: c.textTertiary.withValues(alpha: 0.6)),
-                const SizedBox(width: 3),
-                Text(
-                  'Plates',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: c.textTertiary.withValues(alpha: 0.6),
+          const SizedBox(width: 4),
+          _QuickChip(
+            label: '+${_fmtStep(smallStep)}',
+            accent: true,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              final nv = _weight + smallStep;
+              setState(() => _weight = nv);
+              widget.onWeightChanged?.call(nv);
+            },
+            c: c,
+          ),
+          const SizedBox(width: 4),
+          _QuickChip(
+            label: '+${_fmtStep(bigStep)}',
+            accent: true,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              final nv = _weight + bigStep;
+              setState(() => _weight = nv);
+              widget.onWeightChanged?.call(nv);
+            },
+            c: c,
+          ),
+          const Spacer(),
+          if (PrefsService.showRpe) ...[
+            GestureDetector(
+              onTap: () => _showRpeSheet(context),
+              child: Container(
+                height: 26,
+                padding: const EdgeInsets.symmetric(horizontal: 9),
+                decoration: BoxDecoration(
+                  color: widget.data.rpe != null
+                      ? c.warningAmber.withValues(alpha: .15)
+                      : c.surfaceHigh,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: widget.data.rpe != null
+                        ? c.warningAmber.withValues(alpha: .4)
+                        : c.divider,
                   ),
                 ),
-              ],
+                alignment: Alignment.center,
+                child: Text(
+                  widget.data.rpe != null
+                      ? 'RPE ${widget.data.rpe!.toStringAsFixed(widget.data.rpe! % 1 == 0 ? 0 : 1)}'
+                      : 'RPE',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    color: widget.data.rpe != null
+                        ? c.warningAmber
+                        : c.textSecondary,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+          ],
+          if (rm != null) ...[
+            Text(
+              '1RM ${_format1RM(rm)}',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: c.textTertiary,
+                letterSpacing: 0.3,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          GestureDetector(
+            onTap: () => _showPlateCalc(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: c.surfaceHigh,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: c.divider),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.calculate_outlined,
+                      size: 12, color: c.textSecondary),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Plates',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      color: c.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(width: 44),
+          const SizedBox(width: 48),
         ],
       ),
     );
   }
+
+  static String _fmtStep(double v) =>
+      v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(1);
 
   @override
   Widget build(BuildContext context) {
@@ -272,35 +480,57 @@ class _SetRowState extends State<SetRow>
               // Grid: 32px | 1fr | 80px | 80px | 44px
               Row(
                 children: [
-                  // Set badge — 32px  long-press → type menu
+                  // Set badge — 36px  long-press → type menu
                   GestureDetector(
                     onLongPress: () => _showTypeMenu(context),
                     child: SizedBox(
-                    width: 32,
+                    width: 36,
+                    height: 48,
                     child: Center(
                       child: badgeColor != null
                           ? Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 5, vertical: 2),
+                              width: 28,
+                              height: 28,
                               decoration: BoxDecoration(
-                                color: badgeColor.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(4),
+                                color: badgeColor.withValues(alpha: 0.18),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color:
+                                        badgeColor.withValues(alpha: .45)),
                               ),
+                              alignment: Alignment.center,
                               child: Text(
                                 widget.data.type.name[0].toUpperCase(),
                                 style: TextStyle(
-                                  fontSize: 10, fontWeight: FontWeight.w800,
+                                  fontFamily: 'Inter',
+                                  fontSize: 12, fontWeight: FontWeight.w900,
                                   color: badgeColor,
                                 ),
                               ),
                             )
-                          : Text(
-                              '${widget.data.index + 1}',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w700,
-                                color: _done ? c.successLime : c.textSecondary,
-                                fontFeatures: const [FontFeature.tabularFigures()],
+                          : Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: _done
+                                    ? c.successLime.withValues(alpha: .14)
+                                    : c.surfaceHigh,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '${widget.data.index + 1}',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 14, fontWeight: FontWeight.w900,
+                                  color: _done
+                                      ? c.successLime
+                                      : c.textPrimary,
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures()
+                                  ],
+                                ),
                               ),
                             ),
                     ),
@@ -310,32 +540,60 @@ class _SetRowState extends State<SetRow>
                   // Previous — flex 1  tap → copy to steppers
                   Expanded(
                     child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: widget.data.prev != null ? _usePrev : null,
-                      child: widget.data.prev != null
-                          ? RichText(
-                              overflow: TextOverflow.ellipsis,
-                              text: TextSpan(children: [
-                                TextSpan(
-                                  text: 'Last  ',
-                                  style: TextStyle(
-                                    fontSize: 10, color: c.textTertiary,
-                                    fontFeatures: const [FontFeature.tabularFigures()]),
-                                ),
-                                TextSpan(
-                                  text: () {
-                                    final pw = widget.data.prev!.weight;
-                                    final ws = pw % 1 == 0 ? '${pw.toInt()}' : pw.toStringAsFixed(1);
-                                    return '$ws${PrefsService.unit} × ${widget.data.prev!.reps}';
-                                  }(),
-                                  style: TextStyle(
-                                    fontSize: 11, fontWeight: FontWeight.w600,
-                                    color: c.textSecondary,
-                                    fontFeatures: const [FontFeature.tabularFigures()]),
-                                ),
-                              ]),
-                            )
-                          : Text('—',
-                              style: TextStyle(fontSize: 11, color: c.textTertiary)),
+                      child: SizedBox(
+                        height: 48,
+                        child: widget.data.prev != null
+                            ? Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    () {
+                                      final pw = widget.data.prev!.weight;
+                                      final ws = pw % 1 == 0
+                                          ? '${pw.toInt()}'
+                                          : pw.toStringAsFixed(1);
+                                      return '$ws ${PrefsService.unit} × ${widget.data.prev!.reps}';
+                                    }(),
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: c.textPrimary,
+                                      letterSpacing: -0.1,
+                                      fontFeatures: const [
+                                        FontFeature.tabularFigures()
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 1),
+                                  Text(
+                                    'tap to copy',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: c.accentIron
+                                          .withValues(alpha: .8),
+                                      letterSpacing: 0.7,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text('— first set —',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 11,
+                                      color: c.textTertiary,
+                                      fontWeight: FontWeight.w700,
+                                    )),
+                              ),
+                      ),
                     ),
                   ),
 
@@ -380,29 +638,47 @@ class _SetRowState extends State<SetRow>
                   ),
 
                   // Check button — spring bounce animation
-                  GestureDetector(
+                  Semantics(
+                    label: _done
+                        ? 'Mark set ${widget.data.index + 1} as incomplete'
+                        : 'Mark set ${widget.data.index + 1} as complete: '
+                            '${_weight} ${PrefsService.unit} times $_reps reps',
+                    button: true,
+                    selected: _done,
+                    child: GestureDetector(
                     onTap: _toggle,
                     child: SizedBox(
-                      width: 44,
-                      height: 44,
+                      width: 48,
+                      height: 48,
                       child: Center(
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 220),
                           curve: Curves.easeOut,
-                          width: 36, height: 36,
+                          width: 38,
+                          height: 38,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: _done ? c.successLime : Colors.transparent,
                             border: _done
                                 ? null
-                                : Border.all(color: c.divider, width: 1.5),
+                                : Border.all(color: c.divider, width: 2),
+                            boxShadow: _done
+                                ? [
+                                    BoxShadow(
+                                      color: c.successLime
+                                          .withValues(alpha: .45),
+                                      blurRadius: 14,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ]
+                                : null,
                           ),
                           child: _done
                               ? ScaleTransition(
                                   scale: _checkScale,
                                   child: const Icon(
                                     Icons.check_rounded,
-                                    size: 17,
+                                    size: 22,
                                     color: Colors.white,
                                   ),
                                 )
@@ -410,6 +686,7 @@ class _SetRowState extends State<SetRow>
                         ),
                       ),
                     ),
+                  ),
                   ),
                 ],
               ),
@@ -450,23 +727,21 @@ class _Stepper extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = Theme.of(context).extension<AppColors>()!;
     return Container(
-      height: 44,
+      height: 48,
       decoration: BoxDecoration(
         color: surfaceColor,
-        border: Border.all(color: borderColor, width: 0.5),
-        borderRadius: BorderRadius.circular(AppRadius.xs),
+        border: Border.all(color: borderColor, width: 1),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Row(
         children: [
           GestureDetector(
             onTap: () => onChanged((value - step).clamp(0, double.infinity)),
             child: SizedBox(
-              width: 32, height: 44,
+              width: 32, height: 48,
               child: Center(
-                child: Text(
-                  '−',
-                  style: TextStyle(fontSize: 18, color: c.textSecondary),
-                ),
+                child: Icon(Icons.remove_rounded,
+                    size: 18, color: c.textSecondary),
               ),
             ),
           ),
@@ -476,8 +751,10 @@ class _Stepper extends StatelessWidget {
                     value % 1 == 0 ? '${value.toInt()}' : '$value',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w700,
+                      fontFamily: 'Inter',
+                      fontSize: 19, fontWeight: FontWeight.w900,
                       color: textColor,
+                      letterSpacing: -0.3,
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   )
@@ -485,18 +762,15 @@ class _Stepper extends StatelessWidget {
                     textAlign: TextAlign.center,
                     text: TextSpan(children: [
                       TextSpan(
-                        text: value % 1 == 0 ? '${value.toInt()}' : value.toStringAsFixed(1),
+                        text: value % 1 == 0
+                            ? '${value.toInt()}'
+                            : value.toStringAsFixed(1),
                         style: TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w700,
+                          fontFamily: 'Inter',
+                          fontSize: 19, fontWeight: FontWeight.w900,
                           color: textColor,
+                          letterSpacing: -0.3,
                           fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                      TextSpan(
-                        text: unit,
-                        style: TextStyle(
-                          fontSize: 9, fontWeight: FontWeight.w500,
-                          color: borderColor,
                         ),
                       ),
                     ]),
@@ -505,12 +779,10 @@ class _Stepper extends StatelessWidget {
           GestureDetector(
             onTap: () => onChanged(value + step),
             child: SizedBox(
-              width: 32, height: 44,
+              width: 32, height: 48,
               child: Center(
-                child: Text(
-                  '+',
-                  style: TextStyle(fontSize: 18, color: c.textSecondary),
-                ),
+                child: Icon(Icons.add_rounded,
+                    size: 18, color: c.textSecondary),
               ),
             ),
           ),
@@ -838,6 +1110,53 @@ class _PlateCalcSheetState extends State<_PlateCalcSheet> {
           ],
           const SizedBox(height: 4),
         ],
+      ),
+    );
+  }
+}
+
+// ── Quick-adjust chip ─────────────────────────────────────────
+class _QuickChip extends StatelessWidget {
+  const _QuickChip({
+    required this.label,
+    required this.onTap,
+    required this.c,
+    this.accent = false,
+  });
+  final String label;
+  final VoidCallback onTap;
+  final AppColors c;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 26,
+        padding: const EdgeInsets.symmetric(horizontal: 9),
+        decoration: BoxDecoration(
+          color: accent
+              ? c.accentIron.withValues(alpha: .12)
+              : c.surfaceHigh,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+              color: accent
+                  ? c.accentIron.withValues(alpha: .35)
+                  : c.divider),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            color: accent ? c.accentIron : c.textSecondary,
+            fontSize: 11.5,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.1,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
       ),
     );
   }

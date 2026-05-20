@@ -1,3 +1,5 @@
+// ignore_for_file: dead_code, unused_element, unused_import
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
@@ -11,6 +13,8 @@ import '../data/program_data.dart';
 import '../models/workout.dart' show WorkoutExercise;
 import 'routine_editor_screen.dart';
 import '../utils/training_helpers.dart';
+import '../widgets/velt_redesign_widgets.dart';
+import 'exercise_library_screen.dart';
 
 // ── Program catalogue ─────────────────────────────────────────
 class _Program {
@@ -51,7 +55,8 @@ const _programs = [
     description:
         'Groups exercises by movement type: pushing muscles (chest/shoulders/triceps), pulling muscles (back/biceps), and legs. '
         'Each group is trained twice per week. Most popular split for building a balanced physique.',
-    bestFor: 'Someone who can train 5-6 days/week and wants to build muscle evenly.',
+    bestFor:
+        'Someone who can train 5-6 days/week and wants to build muscle evenly.',
   ),
   _Program(
     id: '5x5',
@@ -65,7 +70,8 @@ const _programs = [
     description:
         'Only 3 compound exercises per session: Squat, Bench Press/OHP, and Barbell Row/Deadlift. '
         'Add 2.5 kg every workout. Simple, proven, and very effective for beginners.',
-    bestFor: 'Absolute beginners who want to get strong fast with minimum complexity.',
+    bestFor:
+        'Absolute beginners who want to get strong fast with minimum complexity.',
   ),
   _Program(
     id: '531',
@@ -79,7 +85,8 @@ const _programs = [
     description:
         '4 main lifts, each trained once per week with rotating intensity: 65/75/85%, 70/80/90%, 75/85/95%, then deload. '
         'The top set is taken to near failure (AMRAP). Works for years without burning out.',
-    bestFor: 'Someone who has been lifting 6+ months and wants to keep getting stronger long-term.',
+    bestFor:
+        'Someone who has been lifting 6+ months and wants to keep getting stronger long-term.',
   ),
   _Program(
     id: 'ul',
@@ -93,7 +100,8 @@ const _programs = [
     description:
         'Two upper-body days and two lower-body days per week. Upper A focuses on strength (lower reps), Upper B on volume (higher reps). '
         'Each muscle gets hit twice per week, which is ideal for growth.',
-    bestFor: 'Beginners or intermediates who want a simple, proven 4-day schedule.',
+    bestFor:
+        'Beginners or intermediates who want a simple, proven 4-day schedule.',
   ),
   _Program(
     id: 'gzclp',
@@ -107,7 +115,8 @@ const _programs = [
     description:
         'Uses a tier system: T1 (5×3 max strength), T2 (4×6 volume), T3 (isolation/accessories). '
         'Linear progression on all tiers with different failure protocols. Very systematic.',
-    bestFor: 'Lifters who want a structured system that builds both strength and size simultaneously.',
+    bestFor:
+        'Lifters who want a structured system that builds both strength and size simultaneously.',
   ),
   _Program(
     id: 'nsuns',
@@ -121,7 +130,8 @@ const _programs = [
     description:
         'Adds significant volume to the classic 5/3/1 framework through 8-9 set ladders per main lift. '
         'Weekly progression on training maxes. Very demanding — requires good recovery.',
-    bestFor: 'Experienced lifters who want maximum strength gains and can handle 5 hard sessions/week.',
+    bestFor:
+        'Experienced lifters who want maximum strength gains and can handle 5 hard sessions/week.',
   ),
   _Program(
     id: 'beg-full',
@@ -135,7 +145,8 @@ const _programs = [
     description:
         'Two alternating full-body workouts, each containing a squat, a press, a pull, and a hinge. '
         'Trains every muscle three times per week with low enough volume to recover between sessions.',
-    bestFor: 'True beginners who want to build a foundation of strength and technique.',
+    bestFor:
+        'True beginners who want to build a foundation of strength and technique.',
   ),
   _Program(
     id: 'ppl-3d',
@@ -149,7 +160,8 @@ const _programs = [
     description:
         'A condensed PPL where each muscle group is trained once per week with higher volume per session. '
         'Good for those who want the PPL split but can only train 3 days.',
-    bestFor: 'Intermediates with busy schedules who prefer full sessions over training frequency.',
+    bestFor:
+        'Intermediates with busy schedules who prefer full sessions over training frequency.',
   ),
   _Program(
     id: 'fb-hyper',
@@ -163,7 +175,8 @@ const _programs = [
     description:
         'Trains every muscle three times per week with moderate weight and higher rep ranges. '
         'Each of the three sessions has a different emphasis: squat, hip hinge, and deadlift patterns.',
-    bestFor: 'Intermediates who want maximum muscle growth with 3 training days.',
+    bestFor:
+        'Intermediates who want maximum muscle growth with 3 training days.',
   ),
   _Program(
     id: 'strength-3d',
@@ -177,7 +190,8 @@ const _programs = [
     description:
         'Two alternating workouts focused on the big 5 compound lifts with low reps and high intensity. '
         'No isolation work — just the movements that build the most strength.',
-    bestFor: 'Lifters who want to increase their squat, bench, deadlift, and overhead press.',
+    bestFor:
+        'Lifters who want to increase their squat, bench, deadlift, and overhead press.',
   ),
   _Program(
     id: 'powerbuilding',
@@ -191,7 +205,8 @@ const _programs = [
     description:
         'Each session starts with a powerlifting-style strength block (low reps, high intensity) '
         'followed by bodybuilding-style accessory volume. The best approach for getting both stronger and bigger.',
-    bestFor: 'Intermediate lifters who want to get strong on the big lifts while building visible muscle.',
+    bestFor:
+        'Intermediate lifters who want to get strong on the big lifts while building visible muscle.',
   ),
   _Program(
     id: 'chest-tri',
@@ -205,7 +220,8 @@ const _programs = [
     description:
         'Three rotating push sessions targeting chest and triceps from multiple angles. '
         'Combines heavy compound pressing with isolation work for complete development.',
-    bestFor: 'Anyone who wants to prioritize upper body pushing strength and chest size.',
+    bestFor:
+        'Anyone who wants to prioritize upper body pushing strength and chest size.',
   ),
   _Program(
     id: 'back-bi',
@@ -247,7 +263,8 @@ const _programs = [
     description:
         'Three shoulder sessions targeting front, side, and rear deltoids. '
         'High lateral raise volume for width, balanced with pressing strength and rear delt health.',
-    bestFor: 'Anyone who wants broader shoulders and a more athletic-looking upper body.',
+    bestFor:
+        'Anyone who wants broader shoulders and a more athletic-looking upper body.',
   ),
 ];
 
@@ -284,7 +301,8 @@ class _TrainScreenState extends State<TrainScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 36, height: 4,
+              width: 36,
+              height: 4,
               margin: const EdgeInsets.only(top: 12, bottom: 16),
               decoration: BoxDecoration(
                 color: c.divider,
@@ -295,14 +313,15 @@ class _TrainScreenState extends State<TrainScreen> {
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
               child: Text(
                 r.name,
-                style: AppTypography.titleM(c.textPrimary).copyWith(fontSize: 16),
+                style:
+                    AppTypography.titleM(c.textPrimary).copyWith(fontSize: 16),
                 textAlign: TextAlign.center,
               ),
             ),
             const SizedBox(height: AppSpacing.xs),
             ListTile(
-              leading: Icon(Icons.play_circle_outline_rounded,
-                  color: c.accentIron),
+              leading:
+                  Icon(Icons.play_circle_outline_rounded, color: c.accentIron),
               title: Text('Start Workout',
                   style: AppTypography.bodyM(c.textPrimary)),
               onTap: () {
@@ -343,6 +362,20 @@ class _TrainScreenState extends State<TrainScreen> {
     widget.onStartWorkout(r.name, r.exercises.isNotEmpty ? r.exercises : null);
   }
 
+  void _openExerciseLibrary() {
+    HapticFeedback.selectionClick();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ExerciseLibraryScreen(
+          onStartWorkout: (name, exercises) {
+            Navigator.of(context).pop();
+            widget.onStartWorkout(name, exercises);
+          },
+        ),
+      ),
+    );
+  }
+
   void _confirmDelete(Routine r) {
     RoutineStore.delete(r.id);
     ScaffoldMessenger.of(context)
@@ -356,7 +389,7 @@ class _TrainScreenState extends State<TrainScreen> {
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 4),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.sm)),
+            borderRadius: BorderRadius.circular(AppRadius.sm)),
       ));
   }
 
@@ -378,6 +411,16 @@ class _TrainScreenState extends State<TrainScreen> {
         ? _programs
         : _programs.where((p) => p.level == _levelFilter).toList();
 
+    return _FreshTrainScreen(
+      onStartWorkout: widget.onStartWorkout,
+      onOpenNewRoutine: _openNewRoutine,
+      onStartRoutine: _startRoutine,
+      onRoutineOptions: (r) => _showRoutineOptions(context, r),
+      onProgramSelected: (p) => setState(() => _selectedProgram = p),
+      onOpenLibrary: _openExerciseLibrary,
+      filteredPrograms: filtered,
+    );
+
     return Scaffold(
       backgroundColor: c.surface,
       body: SafeArea(
@@ -388,21 +431,20 @@ class _TrainScreenState extends State<TrainScreen> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md, AppSpacing.xl,
-                  AppSpacing.md, AppSpacing.md),
+                    AppSpacing.md, AppSpacing.xl, AppSpacing.md, AppSpacing.md),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Train',
-                      style: AppTypography.displayL(c.textPrimary).copyWith(
-                        fontSize: 34, letterSpacing: -1, height: 1),
+                      style: AppTypography.displayL(c.textPrimary)
+                          .copyWith(fontSize: 34, letterSpacing: -1, height: 1),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Your routines & programs',
-                      style: AppTypography.bodyS(c.textTertiary).copyWith(
-                        fontSize: 13, height: 1),
+                      style: AppTypography.bodyS(c.textTertiary)
+                          .copyWith(fontSize: 13, height: 1),
                     ),
                   ],
                 ),
@@ -411,10 +453,9 @@ class _TrainScreenState extends State<TrainScreen> {
 
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md, 0, AppSpacing.md, AppSpacing.xxl),
+                  AppSpacing.md, 0, AppSpacing.md, AppSpacing.xxl),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-
                   // ── My Routines ──────────────────────────
                   Row(
                     children: [
@@ -445,7 +486,7 @@ class _TrainScreenState extends State<TrainScreen> {
                           final r = routines[i];
                           return Padding(
                             padding: EdgeInsets.only(
-                              bottom: i < routines.length - 1 ? 12 : 0),
+                                bottom: i < routines.length - 1 ? 12 : 0),
                             child: _RoutineCard(
                               routine: r,
                               onTap: () => _startRoutine(r),
@@ -472,28 +513,32 @@ class _TrainScreenState extends State<TrainScreen> {
                   // Section divider
                   Row(
                     children: [
-                      Expanded(child: Container(
-                        height: 1,
-                        color: c.divider.withValues(alpha: 0.4))),
+                      Expanded(
+                          child: Container(
+                              height: 1,
+                              color: c.divider.withValues(alpha: 0.4))),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
                           'EXPLORE PROGRAMS',
                           style: AppTypography.caption(c.textTertiary).copyWith(
-                            fontSize: 9, letterSpacing: 1.4,
-                            fontWeight: FontWeight.w700),
+                              fontSize: 9,
+                              letterSpacing: 1.4,
+                              fontWeight: FontWeight.w700),
                         ),
                       ),
-                      Expanded(child: Container(
-                        height: 1,
-                        color: c.divider.withValues(alpha: 0.4))),
+                      Expanded(
+                          child: Container(
+                              height: 1,
+                              color: c.divider.withValues(alpha: 0.4))),
                     ],
                   ),
                   const SizedBox(height: 14),
 
                   // Recommended banner
                   _RecommendedBanner(
-                    text: TrainingHelpers.recommendationText(fitnessGoal, experienceLevel),
+                    text: TrainingHelpers.recommendationText(
+                        fitnessGoal, experienceLevel),
                     c: c,
                   ),
                   const SizedBox(height: 12),
@@ -507,7 +552,12 @@ class _TrainScreenState extends State<TrainScreen> {
                       itemCount: 4,
                       separatorBuilder: (_, __) => const SizedBox(width: 6),
                       itemBuilder: (_, i) {
-                        const levels = ['All', 'Beginner', 'Intermediate', 'Advanced'];
+                        const levels = [
+                          'All',
+                          'Beginner',
+                          'Intermediate',
+                          'Advanced'
+                        ];
                         return VeltFilterChip(
                           label: levels[i],
                           active: _levelFilter == levels[i],
@@ -521,19 +571,28 @@ class _TrainScreenState extends State<TrainScreen> {
                   // Program cards — goal-matching first
                   ...() {
                     final sorted = [...filtered]..sort((a, b) {
-                      final aM = TrainingHelpers.programMatchesGoal(a.goal, fitnessGoal) ? 0 : 1;
-                      final bM = TrainingHelpers.programMatchesGoal(b.goal, fitnessGoal) ? 0 : 1;
-                      return aM.compareTo(bM);
-                    });
+                        final aM = TrainingHelpers.programMatchesGoal(
+                                a.goal, fitnessGoal)
+                            ? 0
+                            : 1;
+                        final bM = TrainingHelpers.programMatchesGoal(
+                                b.goal, fitnessGoal)
+                            ? 0
+                            : 1;
+                        return aM.compareTo(bM);
+                      });
                     return List.generate(sorted.length, (i) {
                       final p = sorted[i];
+                      final matchesGoal = TrainingHelpers.programMatchesGoal(
+                          p.goal, fitnessGoal);
                       return Padding(
                         padding: EdgeInsets.only(
-                          bottom: i < sorted.length - 1 ? 10 : 0),
+                            bottom: i < sorted.length - 1 ? 10 : 0),
                         child: _ProgramCard(
                           program: p,
                           onTap: () => setState(() => _selectedProgram = p),
-                          matchesGoal: TrainingHelpers.programMatchesGoal(p.goal, fitnessGoal),
+                          matchesGoal: matchesGoal,
+                          isTopRecommended: i == 0 && matchesGoal,
                           c: c,
                         ),
                       );
@@ -550,6 +609,309 @@ class _TrainScreenState extends State<TrainScreen> {
 }
 
 // ── Quick Start Bar (compact) ─────────────────────────────────
+class _FreshTrainScreen extends StatelessWidget {
+  const _FreshTrainScreen({
+    required this.onStartWorkout,
+    required this.onOpenNewRoutine,
+    required this.onStartRoutine,
+    required this.onRoutineOptions,
+    required this.onProgramSelected,
+    required this.onOpenLibrary,
+    required this.filteredPrograms,
+  });
+
+  final void Function(String, List<WorkoutExercise>?) onStartWorkout;
+  final VoidCallback onOpenNewRoutine;
+  final ValueChanged<Routine> onStartRoutine;
+  final ValueChanged<Routine> onRoutineOptions;
+  final ValueChanged<_Program> onProgramSelected;
+  final VoidCallback onOpenLibrary;
+  final List<_Program> filteredPrograms;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).extension<AppColors>()!;
+    return VeltScreen(
+      child: ValueListenableBuilder<List<Routine>>(
+        valueListenable: RoutineStore.routines,
+        builder: (context, routines, _) {
+          final next = routines.isEmpty ? null : routines.first;
+          final nextName = next?.name ?? 'Empty Workout';
+          final exerciseCount = next?.exercises.length ?? 0;
+          final setCount = next == null
+              ? 0
+              : next.exercises.fold<int>(0, (sum, e) => sum + e.sets.length);
+          final recommended = filteredPrograms.isNotEmpty
+              ? filteredPrograms.first
+              : _programs.first;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              VeltHeader(
+                eyebrow: 'Workout hub',
+                title: 'Train',
+                trailing: VeltIconButton(label: '+', onTap: onOpenNewRoutine),
+              ),
+              VeltSegment(
+                items: const ['Today', 'Routines', 'Library'],
+                selected: 0,
+                onSelected: (i) {
+                  if (i == 1) onOpenNewRoutine();
+                  if (i == 2) onOpenLibrary();
+                },
+              ),
+              const SizedBox(height: 10),
+              VeltPanel(
+                hero: true,
+                padding: const EdgeInsets.all(15),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        VeltPill('Next workout', accent: true),
+                        Spacer(),
+                        VeltPill('Ready', success: true),
+                      ],
+                    ),
+                    const SizedBox(height: 9),
+                    Text(
+                      '$nextName is queued.',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        color: c.textPrimary,
+                        fontSize: 32,
+                        height: 1.06,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Text(
+                      next == null
+                          ? 'Start fast or build a routine for later.'
+                          : 'Start fast or tune the plan first.',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        color: c.textSecondary,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                            child: VeltMetric(
+                                value: '$exerciseCount', label: 'Exercises')),
+                        const SizedBox(width: 8),
+                        Expanded(
+                            child:
+                                VeltMetric(value: '$setCount', label: 'Sets')),
+                        const SizedBox(width: 8),
+                        Expanded(
+                            child: VeltMetric(
+                                value: setCount == 0
+                                    ? '—'
+                                    : '${(setCount * 2.5).round()}',
+                                label: 'Minutes')),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: VeltButton(
+                            label: next == null
+                                ? 'Start Empty'
+                                : 'Start ${next.name}',
+                            onTap: () => next == null
+                                ? onStartWorkout('Empty Workout', null)
+                                : onStartRoutine(next),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 72,
+                          child: VeltButton(
+                            label: 'Edit',
+                            secondary: true,
+                            onTap: next == null
+                                ? onOpenNewRoutine
+                                : () => onRoutineOptions(next),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                      child: _QuickTrainTile(
+                          icon: '+',
+                          label: 'Empty workout',
+                          onTap: () => onStartWorkout('Empty Workout', null))),
+                  const SizedBox(width: 8),
+                  Expanded(
+                      child: _QuickTrainTile(
+                          icon: 'B',
+                          label: 'Build routine',
+                          onTap: onOpenNewRoutine)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                      child: _QuickTrainTile(
+                          icon: 'L',
+                          label: 'Exercise library',
+                          onTap: onOpenLibrary)),
+                ],
+              ),
+              const VeltSection(
+                label: 'Your routines',
+                trailing: VeltPill('View all'),
+              ),
+              if (routines.isEmpty)
+                VeltPanel(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'No routines yet',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          color: c.textPrimary,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Create your first routine or add a ready-made program.',
+                        style: TextStyle(color: c.textSecondary, fontSize: 12),
+                      ),
+                      const SizedBox(height: 12),
+                      VeltButton(
+                          label: 'Build Routine', onTap: onOpenNewRoutine),
+                    ],
+                  ),
+                )
+              else
+                Column(
+                  children: [
+                    for (final r in routines.take(3)) ...[
+                      VeltRowCard(
+                        icon: r.name.characters.first.toUpperCase(),
+                        title: r.name,
+                        subtitle:
+                            '${r.lastDoneLabel} · ${r.exercises.length} exercises',
+                        trailing: const VeltPill('Start', accent: true),
+                        onTap: () => onStartRoutine(r),
+                      ),
+                      if (r != routines.take(3).last) const SizedBox(height: 8),
+                    ],
+                  ],
+                ),
+              const VeltSection(
+                label: 'Recommended',
+                trailing: VeltPill('Preview'),
+              ),
+              VeltRowCard(
+                icon: 'P',
+                title: recommended.name,
+                subtitle: '${recommended.level} · ${recommended.daysPerWeek}',
+                trailing: const VeltPill('Open', accent: true),
+                onTap: () => onProgramSelected(recommended),
+              ),
+              const VeltSection(
+                label: 'All programs',
+                trailing: VeltPill('10+'),
+              ),
+              for (int i = 0; i < filteredPrograms.length; i++) ...[
+                VeltRowCard(
+                  icon: filteredPrograms[i].name.characters.first.toUpperCase(),
+                  title: filteredPrograms[i].name,
+                  subtitle:
+                      '${filteredPrograms[i].level} · ${filteredPrograms[i].daysPerWeek}',
+                  trailing: const VeltPill('Open'),
+                  onTap: () => onProgramSelected(filteredPrograms[i]),
+                ),
+                if (i < filteredPrograms.length - 1) const SizedBox(height: 8),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _QuickTrainTile extends StatelessWidget {
+  const _QuickTrainTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final String icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).extension<AppColors>()!;
+    return GestureDetector(
+      onTap: onTap,
+      child: VeltPanel(
+        padding: const EdgeInsets.all(9),
+        child: SizedBox(
+          height: 51,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  color: Color.lerp(c.surfaceHigh, c.accentIron, .13),
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                child: Center(
+                  child: Text(
+                    icon,
+                    style: TextStyle(
+                      color: c.accentIron,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  color: c.textPrimary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _QuickStartBar extends StatelessWidget {
   const _QuickStartBar({required this.onQuickStart, required this.c});
   final VoidCallback onQuickStart;
@@ -572,13 +934,13 @@ class _QuickStartBar extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 38, height: 38,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
                 color: c.accentIron.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
-              child: Icon(Icons.bolt_rounded,
-                color: c.accentIron, size: 20),
+              child: Icon(Icons.bolt_rounded, color: c.accentIron, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -587,20 +949,20 @@ class _QuickStartBar extends StatelessWidget {
                 children: [
                   Text(
                     'Empty Workout',
-                    style: AppTypography.titleS(c.textPrimary).copyWith(
-                      fontSize: 14, fontWeight: FontWeight.w700),
+                    style: AppTypography.titleS(c.textPrimary)
+                        .copyWith(fontSize: 14, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     'Quick session — no routine needed',
-                    style: AppTypography.bodyS(c.textTertiary).copyWith(
-                      fontSize: 11),
+                    style: AppTypography.bodyS(c.textTertiary)
+                        .copyWith(fontSize: 11),
                   ),
                 ],
               ),
             ),
             Icon(Icons.arrow_forward_ios_rounded,
-              size: 13, color: c.textTertiary),
+                size: 13, color: c.textTertiary),
           ],
         ),
       ),
@@ -652,7 +1014,8 @@ class _RoutineCard extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: c.surfaceElevated,
-            border: Border.all(color: c.divider.withValues(alpha: 0.5), width: 0.5),
+            border:
+                Border.all(color: c.divider.withValues(alpha: 0.5), width: 0.5),
           ),
           child: IntrinsicHeight(
             child: Row(
@@ -673,60 +1036,82 @@ class _RoutineCard extends StatelessWidget {
                             children: [
                               Text(
                                 routine.name,
-                                style: AppTypography.titleM(c.textPrimary).copyWith(
-                                  fontSize: 15, letterSpacing: -0.1),
+                                style: AppTypography.titleM(c.textPrimary)
+                                    .copyWith(
+                                        fontSize: 15, letterSpacing: -0.1),
                               ),
                               const SizedBox(height: 7),
                               if (muscles.isNotEmpty)
                                 Wrap(
                                   spacing: 5,
                                   runSpacing: 4,
-                                  children: muscles.map((m) => Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: routine.color.withValues(alpha: 0.13),
-                                      borderRadius: BorderRadius.circular(AppRadius.full),
-                                    ),
-                                    child: Text(
-                                      m,
-                                      style: AppTypography.caption(routine.color).copyWith(
-                                        fontSize: 10.5, fontWeight: FontWeight.w600,
-                                        letterSpacing: 0.02),
-                                    ),
-                                  )).toList(),
+                                  children: muscles
+                                      .map((m) => Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 7, vertical: 2.5),
+                                            decoration: BoxDecoration(
+                                              color: c.surfaceHigh,
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      AppRadius.full),
+                                            ),
+                                            child: Text(
+                                              m,
+                                              style: AppTypography.caption(
+                                                      c.textSecondary)
+                                                  .copyWith(
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      letterSpacing: 0.2),
+                                            ),
+                                          ))
+                                      .toList(),
                                 ),
                               const SizedBox(height: 9),
                               Row(
                                 children: [
                                   Text(
                                     '$exCount ex · $_estimatedTime',
-                                    style: AppTypography.caption(c.textTertiary).copyWith(
-                                      fontSize: 10, letterSpacing: 0.01),
+                                    style: AppTypography.caption(c.textTertiary)
+                                        .copyWith(
+                                            fontSize: 10, letterSpacing: 0.01),
                                   ),
                                   if (doneToday) ...[
                                     const SizedBox(width: 6),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: c.successLime.withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(AppRadius.full),
+                                        color: c.successLime
+                                            .withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(
+                                            AppRadius.full),
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Icon(Icons.check_rounded, size: 9, color: c.successLime),
+                                          Icon(Icons.check_rounded,
+                                              size: 9, color: c.successLime),
                                           const SizedBox(width: 3),
-                                          Text('Done today', style: AppTypography.caption(c.successLime).copyWith(
-                                            fontSize: 9.5, fontWeight: FontWeight.w600)),
+                                          Text('Done today',
+                                              style: AppTypography.caption(
+                                                      c.successLime)
+                                                  .copyWith(
+                                                      fontSize: 9.5,
+                                                      fontWeight:
+                                                          FontWeight.w600)),
                                         ],
                                       ),
                                     ),
                                   ] else if (routine.lastDone != null) ...[
                                     Text(
                                       ' · Done ${routine.lastDoneLabel}',
-                                      style: AppTypography.caption(c.textTertiary).copyWith(
-                                        fontSize: 10, letterSpacing: 0.01),
+                                      style:
+                                          AppTypography.caption(c.textTertiary)
+                                              .copyWith(
+                                                  fontSize: 10,
+                                                  letterSpacing: 0.01),
                                     ),
                                   ],
                                 ],
@@ -744,7 +1129,7 @@ class _RoutineCard extends StatelessWidget {
                               child: Padding(
                                 padding: const EdgeInsets.all(12),
                                 child: Icon(Icons.more_horiz_rounded,
-                                  size: 20, color: c.textSecondary),
+                                    size: 20, color: c.textSecondary),
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -756,11 +1141,13 @@ class _RoutineCard extends StatelessWidget {
                               child: doneToday
                                   ? Container(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 11, vertical: 9),
+                                          horizontal: 11, vertical: 9),
                                       decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                                        borderRadius:
+                                            BorderRadius.circular(AppRadius.sm),
                                         border: Border.all(
-                                          color: routine.color.withValues(alpha: 0.55),
+                                          color: routine.color
+                                              .withValues(alpha: 0.55),
                                           width: 1.2,
                                         ),
                                       ),
@@ -768,36 +1155,44 @@ class _RoutineCard extends StatelessWidget {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Icon(Icons.replay_rounded,
-                                            size: 11, color: routine.color.withValues(alpha: 0.85)),
+                                              size: 11,
+                                              color: routine.color
+                                                  .withValues(alpha: 0.85)),
                                           const SizedBox(width: 4),
                                           Text(
                                             'Again',
                                             style: AppTypography.caption(
-                                              routine.color.withValues(alpha: 0.85),
+                                              routine.color
+                                                  .withValues(alpha: 0.85),
                                             ).copyWith(
-                                              fontSize: 12, fontWeight: FontWeight.w700),
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700),
                                           ),
                                         ],
                                       ),
                                     )
                                   : Container(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 13, vertical: 9),
+                                          horizontal: 13, vertical: 9),
                                       decoration: BoxDecoration(
-                                        color: routine.color,
-                                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                                        color: c.accentIron,
+                                        borderRadius:
+                                            BorderRadius.circular(AppRadius.sm),
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           const Icon(Icons.play_arrow_rounded,
-                                            size: 12, color: Colors.white),
+                                              size: 12, color: Colors.white),
                                           const SizedBox(width: 4),
                                           Text(
                                             'Start',
-                                            style: AppTypography.caption(Colors.white).copyWith(
-                                              fontSize: 12, fontWeight: FontWeight.w700,
-                                              letterSpacing: 0.02),
+                                            style: AppTypography.caption(
+                                                    Colors.white)
+                                                .copyWith(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w700,
+                                                    letterSpacing: 0.02),
                                           ),
                                         ],
                                       ),
@@ -849,8 +1244,8 @@ class _EmptyRoutines extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             'Create your own routine or add a ready-made program below.',
-            style: AppTypography.bodyS(c.textTertiary).copyWith(
-              fontSize: 12, height: 1.5),
+            style: AppTypography.bodyS(c.textTertiary)
+                .copyWith(fontSize: 12, height: 1.5),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -891,21 +1286,22 @@ class _RecommendedBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: c.accentIron.withValues(alpha: 0.08),
+        color: c.surfaceElevated,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: c.accentIron.withValues(alpha: 0.3)),
+        border: Border.all(color: c.divider.withValues(alpha: 0.5)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 32, height: 32,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
-              color: c.accentIron.withValues(alpha: 0.15),
+              color: c.surfaceHigh,
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
-            child: Icon(Icons.lightbulb_outline_rounded,
-                size: 16, color: c.accentIron),
+            child: Icon(Icons.info_outline_rounded,
+                size: 16, color: c.textSecondary),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -914,15 +1310,16 @@ class _RecommendedBanner extends StatelessWidget {
               children: [
                 Text(
                   'RECOMMENDED FOR YOU',
-                  style: AppTypography.caption(c.accentIron).copyWith(
-                    fontSize: 12, fontWeight: FontWeight.w700,
-                    letterSpacing: 0.02),
+                  style: AppTypography.caption(c.textSecondary).copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.02),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   text,
-                  style: AppTypography.bodyS(c.textPrimary).copyWith(
-                    fontSize: 13, height: 1.5),
+                  style: AppTypography.bodyS(c.textPrimary)
+                      .copyWith(fontSize: 13, height: 1.5),
                 ),
               ],
             ),
@@ -940,11 +1337,13 @@ class _ProgramCard extends StatelessWidget {
     required this.onTap,
     required this.c,
     this.matchesGoal = false,
+    this.isTopRecommended = false,
   });
   final _Program program;
   final VoidCallback onTap;
   final AppColors c;
   final bool matchesGoal;
+  final bool isTopRecommended;
 
   @override
   Widget build(BuildContext context) {
@@ -956,10 +1355,10 @@ class _ProgramCard extends StatelessWidget {
           color: c.surfaceElevated,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color: matchesGoal
-                ? c.accentIron.withValues(alpha: 0.5)
-                : c.divider.withValues(alpha: 0.5),
-            width: matchesGoal ? 1.5 : 0.5,
+            color: isTopRecommended
+                ? c.accentIron.withValues(alpha: 0.35)
+                : c.divider.withValues(alpha: 0.4),
+            width: isTopRecommended ? 1.0 : 0.5,
           ),
         ),
         child: Column(
@@ -974,14 +1373,14 @@ class _ProgramCard extends StatelessWidget {
                     children: [
                       Text(
                         program.name,
-                        style: AppTypography.titleS(c.textPrimary).copyWith(
-                          fontSize: 15, letterSpacing: -0.1),
+                        style: AppTypography.titleS(c.textPrimary)
+                            .copyWith(fontSize: 15, letterSpacing: -0.1),
                       ),
                       const SizedBox(height: 3),
                       Text(
                         program.tagline,
-                        style: AppTypography.bodyS(c.textSecondary).copyWith(
-                          fontSize: 12, height: 1.4),
+                        style: AppTypography.bodyS(c.textSecondary)
+                            .copyWith(fontSize: 12, height: 1.4),
                       ),
                     ],
                   ),
@@ -989,8 +1388,8 @@ class _ProgramCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 // Level badge
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: _levelColor(program.level).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(AppRadius.full),
@@ -1021,29 +1420,27 @@ class _ProgramCard extends StatelessWidget {
                 _PillStat(
                   icon: Icons.flag_outlined,
                   label: program.goal,
-                  color: program.goalColor,
                   c: c,
                 ),
                 const Spacer(),
-                if (matchesGoal)
+                if (isTopRecommended)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.star_rounded,
-                        size: 10, color: c.accentIron),
+                      Icon(Icons.star_rounded, size: 10, color: c.accentIron),
                       const SizedBox(width: 3),
                       Text(
-                        'Your goal',
-                        style: AppTypography.caption(c.accentIron).copyWith(
-                          fontSize: 9, fontWeight: FontWeight.w700),
+                        'Recommended',
+                        style: AppTypography.caption(c.accentIron)
+                            .copyWith(fontSize: 9, fontWeight: FontWeight.w700),
                       ),
                     ],
                   )
                 else
                   Text(
                     'View details →',
-                    style: AppTypography.caption(c.accentIron).copyWith(
-                      fontSize: 11, fontWeight: FontWeight.w600),
+                    style: AppTypography.caption(c.accentIron)
+                        .copyWith(fontSize: 11, fontWeight: FontWeight.w600),
                   ),
               ],
             ),
@@ -1054,10 +1451,10 @@ class _ProgramCard extends StatelessWidget {
   }
 
   Color _levelColor(String level) => switch (level) {
-    'Beginner'     => const Color(0xFF22C55E),
-    'Advanced'     => const Color(0xFFEF4444),
-    _              => const Color(0xFFD97706),
-  };
+        'Beginner' => const Color(0xFF22C55E),
+        'Advanced' => const Color(0xFFEF4444),
+        _ => const Color(0xFFD97706),
+      };
 }
 
 class _PillStat extends StatelessWidget {
@@ -1088,8 +1485,8 @@ class _PillStat extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: AppTypography.caption(col).copyWith(
-              fontSize: 10, fontWeight: FontWeight.w600),
+            style: AppTypography.caption(col)
+                .copyWith(fontSize: 10, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -1138,14 +1535,12 @@ class _ProgramDetailScreen extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: c.surfaceElevated,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg)),
+            borderRadius: BorderRadius.circular(AppRadius.lg)),
         title: Row(
           children: [
-            Icon(Icons.check_circle_rounded,
-                color: c.successLime, size: 22),
+            Icon(Icons.check_circle_rounded, color: c.successLime, size: 22),
             const SizedBox(width: 8),
-            Text('Program Added!',
-                style: AppTypography.titleM(c.textPrimary)),
+            Text('Program Added!', style: AppTypography.titleM(c.textPrimary)),
           ],
         ),
         content: Text(
@@ -1170,8 +1565,8 @@ class _ProgramDetailScreen extends StatelessWidget {
               );
             },
             child: Text('Start Now',
-                style: AppTypography.bodyM(c.accentIron).copyWith(
-                  fontWeight: FontWeight.w700)),
+                style: AppTypography.bodyM(c.accentIron)
+                    .copyWith(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -1183,6 +1578,17 @@ class _ProgramDetailScreen extends StatelessWidget {
     final c = Theme.of(context).extension<AppColors>()!;
     final veltData = _programStaticData[program.id];
 
+    return _FreshProgramDetailScreen(
+      program: program,
+      veltData: veltData,
+      onBack: onBack,
+      onAddProgram: () => _addProgram(context),
+      onStartRoutine: (routine) {
+        HapticFeedback.mediumImpact();
+        onStartWorkout(routine.name, routine.exercises);
+      },
+    );
+
     return Scaffold(
       backgroundColor: c.surface,
       body: SafeArea(
@@ -1192,7 +1598,7 @@ class _ProgramDetailScreen extends StatelessWidget {
             // ── Sticky header ──────────────────────────────
             Container(
               padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                  horizontal: AppSpacing.md, vertical: AppSpacing.sm),
               decoration: BoxDecoration(
                 color: c.surface,
                 border: Border(bottom: BorderSide(color: c.divider)),
@@ -1202,8 +1608,8 @@ class _ProgramDetailScreen extends StatelessWidget {
                   GestureDetector(
                     onTap: onBack,
                     child: Container(
-                      constraints: const BoxConstraints(
-                        minWidth: 44, minHeight: 44),
+                      constraints:
+                          const BoxConstraints(minWidth: 44, minHeight: 44),
                       alignment: Alignment.centerLeft,
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -1214,7 +1620,7 @@ class _ProgramDetailScreen extends StatelessWidget {
                           Text(
                             'Back',
                             style: AppTypography.bodyM(c.accentIron).copyWith(
-                              fontWeight: FontWeight.w600, fontSize: 15),
+                                fontWeight: FontWeight.w600, fontSize: 15),
                           ),
                         ],
                       ),
@@ -1223,15 +1629,15 @@ class _ProgramDetailScreen extends StatelessWidget {
                   Expanded(
                     child: Text(
                       program.name,
-                      style: AppTypography.titleM(c.textPrimary).copyWith(
-                        fontSize: 16, letterSpacing: -0.15),
+                      style: AppTypography.titleM(c.textPrimary)
+                          .copyWith(fontSize: 16, letterSpacing: -0.15),
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: _levelColor(program.level).withValues(alpha: 0.13),
                       borderRadius: BorderRadius.circular(AppRadius.full),
@@ -1241,8 +1647,9 @@ class _ProgramDetailScreen extends StatelessWidget {
                       style: AppTypography.caption(
                         _levelColor(program.level),
                       ).copyWith(
-                        fontWeight: FontWeight.w800, letterSpacing: 0.5,
-                        fontSize: 9),
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                          fontSize: 9),
                     ),
                   ),
                 ],
@@ -1253,8 +1660,7 @@ class _ProgramDetailScreen extends StatelessWidget {
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md, AppSpacing.lg,
-                  AppSpacing.md, 100),
+                    AppSpacing.md, AppSpacing.lg, AppSpacing.md, 100),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1280,8 +1686,8 @@ class _ProgramDetailScreen extends StatelessWidget {
                     // Description
                     Text(
                       program.description,
-                      style: AppTypography.bodyS(c.textSecondary).copyWith(
-                        fontSize: 14, height: 1.65),
+                      style: AppTypography.bodyS(c.textSecondary)
+                          .copyWith(fontSize: 14, height: 1.65),
                     ),
                     const SizedBox(height: 20),
 
@@ -1292,7 +1698,7 @@ class _ProgramDetailScreen extends StatelessWidget {
                         color: c.accentIron.withValues(alpha: 0.07),
                         borderRadius: BorderRadius.circular(AppRadius.sm),
                         border: Border(
-                          left: BorderSide(color: c.accentIron, width: 3)),
+                            left: BorderSide(color: c.accentIron, width: 3)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1300,14 +1706,15 @@ class _ProgramDetailScreen extends StatelessWidget {
                           Text(
                             'BEST FOR',
                             style: AppTypography.caption(c.accentIron).copyWith(
-                              fontWeight: FontWeight.w700, letterSpacing: 0.8,
-                              fontSize: 10),
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.8,
+                                fontSize: 10),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             program.bestFor,
-                            style: AppTypography.bodyS(c.textSecondary).copyWith(
-                              fontSize: 13, height: 1.5),
+                            style: AppTypography.bodyS(c.textSecondary)
+                                .copyWith(fontSize: 13, height: 1.5),
                           ),
                         ],
                       ),
@@ -1324,18 +1731,19 @@ class _ProgramDetailScreen extends StatelessWidget {
                         ),
                         clipBehavior: Clip.hardEdge,
                         child: Column(
-                          children: List.generate(
-                            veltData.schedule.length, (i) {
+                          children:
+                              List.generate(veltData.schedule.length, (i) {
                             final row = veltData.schedule[i];
                             final isRest = row.$2 == 'Rest';
                             return Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 10),
+                                  horizontal: 14, vertical: 10),
                               decoration: BoxDecoration(
                                 border: i < veltData.schedule.length - 1
                                     ? Border(
                                         bottom: BorderSide(
-                                          color: c.divider.withValues(alpha: 0.3)))
+                                            color: c.divider
+                                                .withValues(alpha: 0.3)))
                                     : null,
                               ),
                               child: Row(
@@ -1355,10 +1763,10 @@ class _ProgramDetailScreen extends StatelessWidget {
                                       style: AppTypography.bodyS(
                                         isRest ? c.textTertiary : c.textPrimary,
                                       ).copyWith(
-                                        fontSize: 13,
-                                        fontStyle: isRest
-                                            ? FontStyle.italic
-                                            : FontStyle.normal),
+                                          fontSize: 13,
+                                          fontStyle: isRest
+                                              ? FontStyle.italic
+                                              : FontStyle.normal),
                                     ),
                                   ),
                                 ],
@@ -1371,42 +1779,44 @@ class _ProgramDetailScreen extends StatelessWidget {
 
                       // Sample day
                       _DetailSection(
-                        label: 'Sample: ${veltData.sampleDayName}', c: c),
+                          label: 'Sample: ${veltData.sampleDayName}', c: c),
                       ...veltData.sampleExercises.map((ex) => Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: c.surfaceElevated,
-                            borderRadius: BorderRadius.circular(AppRadius.sm),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 6, height: 6,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: c.accentIron,
-                                ),
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: c.surfaceElevated,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  ex.$1,
-                                  style: AppTypography.bodyS(c.textPrimary).copyWith(
-                                    fontSize: 13),
-                                ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: c.accentIron,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      ex.$1,
+                                      style: AppTypography.bodyS(c.textPrimary)
+                                          .copyWith(fontSize: 13),
+                                    ),
+                                  ),
+                                  Text(
+                                    ex.$2,
+                                    style: AppTypography.caption(c.textTertiary)
+                                        .copyWith(fontSize: 11),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                ex.$2,
-                                style: AppTypography.caption(c.textTertiary).copyWith(
-                                  fontSize: 11),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )),
+                            ),
+                          )),
                     ],
                   ],
                 ),
@@ -1416,7 +1826,7 @@ class _ProgramDetailScreen extends StatelessWidget {
             // ── Sticky CTA ────────────────────────────────
             Container(
               padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                  horizontal: AppSpacing.md, vertical: AppSpacing.sm),
               decoration: BoxDecoration(
                 color: c.surfaceHigh,
                 border: Border(top: BorderSide(color: c.divider)),
@@ -1448,10 +1858,202 @@ class _ProgramDetailScreen extends StatelessWidget {
   }
 
   Color _levelColor(String level) => switch (level) {
-    'Beginner' => const Color(0xFF22C55E),
-    'Advanced' => const Color(0xFFEF4444),
-    _          => const Color(0xFFD97706),
-  };
+        'Beginner' => const Color(0xFF22C55E),
+        'Advanced' => const Color(0xFFEF4444),
+        _ => const Color(0xFFD97706),
+      };
+}
+
+class _FreshProgramDetailScreen extends StatelessWidget {
+  const _FreshProgramDetailScreen({
+    required this.program,
+    required this.veltData,
+    required this.onBack,
+    required this.onAddProgram,
+    this.onStartRoutine,
+  });
+
+  final _Program program;
+  final _ProgramStaticData? veltData;
+  final VoidCallback onBack;
+  final VoidCallback onAddProgram;
+  final void Function(Routine routine)? onStartRoutine;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).extension<AppColors>()!;
+    final veltProgram = programById(program.id);
+
+    return VeltScreen(
+      bottomPadding: 34,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          VeltTopBar(
+            title: program.name,
+            subtitle: '${program.level} · ${program.daysPerWeek}',
+            onBack: onBack,
+            trailing: VeltPill(program.goal, accent: true),
+          ),
+          const SizedBox(height: 14),
+          VeltPanel(
+            hero: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                VeltLabel(program.goal),
+                const SizedBox(height: 10),
+                Text(
+                  program.tagline,
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontSize: 31,
+                    height: 1.06,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  program.description,
+                  style: TextStyle(
+                    color: c.textSecondary,
+                    fontSize: 13,
+                    height: 1.5,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const VeltSection(label: 'Fit'),
+          VeltPanel(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const VeltLabel('Best for'),
+                const SizedBox(height: 8),
+                Text(
+                  program.bestFor,
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontSize: 14,
+                    height: 1.45,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final group in program.muscleGroups)
+                      VeltPill(group, accent: true),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (veltData != null) ...[
+            const VeltSection(label: 'Weekly schedule'),
+            VeltPanel(
+              child: Column(
+                children: [
+                  for (final row in veltData!.schedule) ...[
+                    _FreshProgramRow(day: row.$1, label: row.$2),
+                    if (row != veltData!.schedule.last)
+                      Divider(height: 14, color: c.divider),
+                  ],
+                ],
+              ),
+            ),
+            VeltSection(label: 'Sample: ${veltData!.sampleDayName}'),
+            for (final ex in veltData!.sampleExercises) ...[
+              VeltRowCard(
+                icon: '•',
+                title: ex.$1,
+                subtitle: ex.$2,
+                trailing: const VeltPill('sample'),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ],
+          if (veltProgram != null && veltProgram.routines.isNotEmpty) ...[
+            VeltSection(
+              label: 'Routines (${veltProgram.routines.length})',
+              trailing: const VeltPill('Tap to start', accent: true),
+            ),
+            for (int i = 0; i < veltProgram.routines.length; i++) ...[
+              VeltRowCard(
+                icon: '${i + 1}',
+                title: veltProgram.routines[i].name,
+                subtitle:
+                    '${veltProgram.routines[i].exercises.length} exercises · ${_estimateMinutes(veltProgram.routines[i])} min',
+                trailing: const VeltPill('Start', accent: true),
+                onTap: onStartRoutine == null
+                    ? null
+                    : () => onStartRoutine!(veltProgram.routines[i]),
+              ),
+              if (i < veltProgram.routines.length - 1)
+                const SizedBox(height: 8),
+            ],
+          ],
+          const SizedBox(height: 14),
+          ValueListenableBuilder(
+            valueListenable: RoutineStore.routines,
+            builder: (context, routines, _) {
+              final vp = programById(program.id);
+              final alreadyAdded = vp != null &&
+                  vp.routines.isNotEmpty &&
+                  routines.any((r) => r.id == vp.routines.first.id);
+              return VeltButton(
+                label: alreadyAdded
+                    ? 'Program added to routines'
+                    : 'Add program to my routines',
+                onTap: alreadyAdded ? null : onAddProgram,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+int _estimateMinutes(Routine r) {
+  final sets = r.exercises.fold<int>(0, (a, e) => a + e.sets.length);
+  return (sets * 2.5).round();
+}
+
+class _FreshProgramRow extends StatelessWidget {
+  const _FreshProgramRow({required this.day, required this.label});
+
+  final String day;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).extension<AppColors>()!;
+    return Row(
+      children: [
+        SizedBox(width: 42, child: VeltLabel(day, color: c.accentIron)),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: label == 'Rest' ? c.textTertiary : c.textPrimary,
+              fontSize: 13,
+              height: 1.35,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _DetailSection extends StatelessWidget {
@@ -1466,7 +2068,7 @@ class _DetailSection extends StatelessWidget {
       child: Text(
         label.toUpperCase(),
         style: AppTypography.caption(c.textTertiary).copyWith(
-          fontWeight: FontWeight.w700, letterSpacing: 0.8, fontSize: 10),
+            fontWeight: FontWeight.w700, letterSpacing: 0.8, fontSize: 10),
       ),
     );
   }

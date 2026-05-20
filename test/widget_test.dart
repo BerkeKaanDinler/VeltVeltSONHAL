@@ -15,32 +15,34 @@ Future<void> initPrefsOnboarded() async {
 }
 
 void main() {
-  testWidgets('Onboarding smoke test — VELT wordmark visible', (tester) async {
+  testWidgets('Onboarding smoke test - welcome visible', (tester) async {
     await initPrefs();
     await tester.pumpWidget(const VeltRoot());
     await tester.pump();
-    expect(find.text('VELT'), findsWidgets);
-    expect(find.text('Get Started'), findsOneWidget);
+    expect(find.textContaining('VELT adapts'), findsOneWidget);
+    expect(find.text('Continue'), findsOneWidget);
   });
 
-  testWidgets('Onboarding step 0 → step 1 shows goal picker', (tester) async {
+  testWidgets('Onboarding step 0 to step 1 shows goal picker', (tester) async {
     await initPrefs();
     await tester.pumpWidget(const VeltRoot());
     await tester.pump();
-    await tester.tap(find.text('Get Started'));
+    await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
-    expect(find.textContaining("primary goal"), findsOneWidget);
+    expect(find.text('What are you building toward?'), findsOneWidget);
   });
 
-  testWidgets('Onboarding goal selection enables Continue', (tester) async {
+  testWidgets('Onboarding goal selection marks selected choice',
+      (tester) async {
     await initPrefs();
     await tester.pumpWidget(const VeltRoot());
     await tester.pump();
-    await tester.tap(find.text('Get Started'));
+    await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Build Muscle'));
     await tester.pumpAndSettle();
     expect(find.text('Continue'), findsOneWidget);
+    expect(find.text('Selected'), findsOneWidget);
   });
 
   testWidgets('Home screen visible after completed onboarding', (tester) async {
@@ -48,18 +50,18 @@ void main() {
     await tester.pumpWidget(const VeltRoot());
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('VELT'), findsWidgets);
-    // Stats section is above the fold and always built
-    expect(find.text('Day Streak'), findsOneWidget);
+    expect(find.text('Home'), findsWidgets);
+    expect(find.text('Start Workout'), findsOneWidget);
   });
 
-  testWidgets('Bottom nav and home content visible after onboarding', (tester) async {
+  testWidgets('Bottom nav and home content visible after onboarding',
+      (tester) async {
     await initPrefsOnboarded();
     await tester.pumpWidget(const VeltRoot());
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Day Streak'), findsOneWidget);
-    // Bottom nav tabs are gesture detectors
+    expect(find.text('Home'), findsWidgets);
+    expect(find.text('Train'), findsOneWidget);
     expect(find.byType(GestureDetector), findsWidgets);
   });
 }

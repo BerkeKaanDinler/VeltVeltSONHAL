@@ -94,6 +94,26 @@ class AppColors extends ThemeExtension<AppColors> {
     errorRose:        Color(0xFFEF4444),
   );
 
+  // ── Warm Paper — editorial warm ivory, premium light theme ────
+  static const warmPaper = AppColors(
+    ink:              Color(0xFFF2EAD9),
+    surface:          Color(0xFFF2EAD9),
+    surfaceElevated:  Color(0xFFFBF6ED),
+    surfaceHigh:      Color(0xFFEAE1D0),
+    divider:          Color(0xFFD8CEBC),
+    textPrimary:      Color(0xFF1C1309),
+    textSecondary:    Color(0xFF5C4A38),
+    textTertiary:     Color(0xFF8A7865),
+    accentIron:       Color(0xFFC55F18),
+    accentIronSoft:   Color(0xFFE6A668),
+    successLime:      Color(0xFF5A8740),
+    warningAmber:     Color(0xFFC97A22),
+    errorRose:        Color(0xFFC03C3C),
+    protein:          Color(0xFFA85820),
+    carbs:            Color(0xFF4A7EA0),
+    fat:              Color(0xFF4E7040),
+  );
+
   // ── Emerald Premium (pro) — deep forest with emerald highlights ─
   static const emeraldPremium = AppColors(
     ink:              Color(0xFF0A1410),

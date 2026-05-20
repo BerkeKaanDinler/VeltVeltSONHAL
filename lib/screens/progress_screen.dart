@@ -1,3 +1,5 @@
+// ignore_for_file: dead_code, unused_element, unused_import
+
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -11,6 +13,8 @@ import '../services/prefs_service.dart';
 import '../utils/weight_unit.dart';
 import '../models/workout.dart' show CompletedWorkout;
 import 'exercise_detail_screen.dart';
+import '../widgets/velt_redesign_widgets.dart';
+import 'paywall_screen.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -41,6 +45,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
   Widget build(BuildContext context) {
     final c = Theme.of(context).extension<AppColors>()!;
 
+    return _FreshProgressScreen(
+      period: _period,
+      onPeriodChanged: (p) => setState(() => _period = p),
+      onLogBodyweight: () => _showBwLog(context),
+    );
+
     return Scaffold(
       backgroundColor: c.surface,
       body: SafeArea(
@@ -48,21 +58,21 @@ class _ProgressScreenState extends State<ProgressScreen> {
         child: ValueListenableBuilder<List<CompletedWorkout>>(
           valueListenable: WorkoutHistoryStore.history,
           builder: (context, history, _) {
-            final streak   = WorkoutHistoryStore.currentStreak;
+            final streak = WorkoutHistoryStore.currentStreak;
             final workouts = WorkoutHistoryStore.workoutsInPeriod(_period);
-            final volume   = WorkoutHistoryStore.totalVolumeInPeriod(_period);
-            final prs      = WorkoutHistoryStore.allTimePRs;
+            final volume = WorkoutHistoryStore.totalVolumeInPeriod(_period);
+            final prs = WorkoutHistoryStore.allTimePRs;
             final chartData = switch (_period) {
               'month' => WorkoutHistoryStore.monthlyVolumes(),
-              'year'  => WorkoutHistoryStore.yearlyVolumes(),
-              _       => WorkoutHistoryStore.weeklyVolumes(),
+              'year' => WorkoutHistoryStore.yearlyVolumes(),
+              _ => WorkoutHistoryStore.weeklyVolumes(),
             };
 
             final now = DateTime.now();
             final periodCutoff = switch (_period) {
               'month' => now.subtract(const Duration(days: 30)),
-              'year'  => now.subtract(const Duration(days: 365)),
-              _       => now.subtract(const Duration(days: 7)),
+              'year' => now.subtract(const Duration(days: 365)),
+              _ => now.subtract(const Duration(days: 7)),
             };
             final filteredHistory = history
                 .where((w) => w.completedAt.isAfter(periodCutoff))
@@ -83,9 +93,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 // ── Header with period selector ──────────────────
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.md, AppSpacing.lg,
-                      AppSpacing.md, AppSpacing.md),
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.md,
+                        AppSpacing.lg, AppSpacing.md, AppSpacing.md),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -123,23 +132,26 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.md, 0, AppSpacing.md, 100),
+                      AppSpacing.md, 0, AppSpacing.md, 100),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
-
                       // ── KPI strip ──────────────────────────────
                       Row(
                         children: [
-                          Expanded(child: _KpiCard(
+                          Expanded(
+                              child: _KpiCard(
                             value: volume <= 0 ? '0' : volLabel,
-                            unit: volume <= 0 ? WeightUnit.suffix : WeightUnit.suffix,
+                            unit: volume <= 0
+                                ? WeightUnit.suffix
+                                : WeightUnit.suffix,
                             label: 'Volume',
                             sublabel: 'This $_period',
                             accent: false,
                             c: c,
                           )),
                           const SizedBox(width: 8),
-                          Expanded(child: _KpiCard(
+                          Expanded(
+                              child: _KpiCard(
                             value: '$workouts',
                             unit: '',
                             label: 'Sessions',
@@ -148,7 +160,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                             c: c,
                           )),
                           const SizedBox(width: 8),
-                          Expanded(child: _KpiCard(
+                          Expanded(
+                              child: _KpiCard(
                             value: streak <= 0 ? 'Start' : '$streak',
                             unit: streak > 0 ? 'days' : '',
                             label: 'Streak',
@@ -190,7 +203,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                       if (prs.isEmpty)
                         _EmptySection(
                           title: 'No records yet',
-                          label: 'Records unlock after completing sets.\nTrain to set your first PR.',
+                          label:
+                              'Records unlock after completing sets.\nTrain to set your first PR.',
                           icon: Icons.emoji_events_outlined,
                           c: c,
                         )
@@ -214,6 +228,364 @@ class _ProgressScreenState extends State<ProgressScreen> {
 }
 
 // ── Period Selector (pill, amber fill active) ──────────────────
+class _FreshProgressScreen extends StatelessWidget {
+  const _FreshProgressScreen({
+    required this.period,
+    required this.onPeriodChanged,
+    required this.onLogBodyweight,
+  });
+
+  final String period;
+  final ValueChanged<String> onPeriodChanged;
+  final VoidCallback onLogBodyweight;
+
+  @override
+  Widget build(BuildContext context) {
+    return VeltScreen(
+      child: ValueListenableBuilder<List<CompletedWorkout>>(
+        valueListenable: WorkoutHistoryStore.history,
+        builder: (context, history, _) {
+          final c = Theme.of(context).extension<AppColors>()!;
+          final streak = WorkoutHistoryStore.currentStreak;
+          final workouts = WorkoutHistoryStore.workoutsInPeriod(period);
+          final volume = WorkoutHistoryStore.totalVolumeInPeriod(period);
+          final prs = WorkoutHistoryStore.allTimePRs;
+          final prEntries = prs.entries.take(4).toList();
+          final chartData = switch (period) {
+            'month' => WorkoutHistoryStore.monthlyVolumes(),
+            'year' => WorkoutHistoryStore.yearlyVolumes(),
+            _ => WorkoutHistoryStore.weeklyVolumes(),
+          };
+          final now = DateTime.now();
+          final cutoff = switch (period) {
+            'month' => now.subtract(const Duration(days: 30)),
+            'year' => now.subtract(const Duration(days: 365)),
+            _ => now.subtract(const Duration(days: 7)),
+          };
+          final filteredHistory =
+              history.where((w) => w.completedAt.isAfter(cutoff)).toList();
+          // Previous-period comparison
+          final prevCutoff = switch (period) {
+            'month' => now.subtract(const Duration(days: 60)),
+            'year' => now.subtract(const Duration(days: 730)),
+            _ => now.subtract(const Duration(days: 14)),
+          };
+          final prevHistory = history
+              .where((w) =>
+                  w.completedAt.isAfter(prevCutoff) &&
+                  w.completedAt.isBefore(cutoff))
+              .toList();
+          final prevVolume =
+              prevHistory.fold<double>(0, (a, w) => a + w.totalVolume);
+          final volumeDelta = prevVolume == 0
+              ? null
+              : ((volume - prevVolume) / prevVolume * 100).round();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              VeltHeader(
+                eyebrow: 'Training signal',
+                title: 'Progress',
+                trailing: VeltPill(period.toUpperCase(), accent: true),
+              ),
+              VeltSegment(
+                items: const ['Week', 'Month', 'Year'],
+                selected: period == 'month'
+                    ? 1
+                    : period == 'year'
+                        ? 2
+                        : 0,
+                onSelected: (i) =>
+                    onPeriodChanged(['week', 'month', 'year'][i]),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                      child: VeltMetric(
+                          value: WeightUnit.formatVolume(volume),
+                          label: 'Volume')),
+                  const SizedBox(width: 8),
+                  Expanded(
+                      child: VeltMetric(value: '$workouts', label: 'Workouts')),
+                  const SizedBox(width: 8),
+                  Expanded(
+                      child: VeltMetric(value: '$streak', label: 'Streak')),
+                ],
+              ),
+              if (volumeDelta != null) ...[
+                const SizedBox(height: 10),
+                _DeltaRow(deltaPercent: volumeDelta, c: c),
+              ],
+              const VeltSection(label: 'Training volume'),
+              if (chartData.isEmpty)
+                _EmptySection(
+                  title: 'No data yet',
+                  label:
+                      'Complete a workout to see your volume trend appear here.',
+                  icon: Icons.show_chart_rounded,
+                  c: c,
+                )
+              else
+                _VolumeChart(
+                  data: chartData,
+                  c: c,
+                  periodLabel:
+                      period[0].toUpperCase() + period.substring(1),
+                ),
+              VeltSection(
+                label: 'Personal records',
+                trailing:
+                    VeltPill('${prs.length} total', success: prs.isNotEmpty),
+              ),
+              if (prEntries.isEmpty)
+                _EmptySection(
+                  title: 'No PRs yet',
+                  label:
+                      'Hit a heavier set than your previous best — VELT will tag it as a PR.',
+                  icon: Icons.emoji_events_outlined,
+                  c: c,
+                )
+              else
+                Column(
+                  children: [
+                    for (final entry in prEntries) ...[
+                      VeltRowCard(
+                        icon: entry.key.characters.first.toUpperCase(),
+                        title: entry.key,
+                        subtitle:
+                            '${WeightUnit.format(entry.value.weight)} · ${entry.value.dateLabel}',
+                        trailing: const VeltPill('PR', success: true),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) =>
+                                  PRDetailScreen(exerciseName: entry.key)),
+                        ),
+                      ),
+                      if (entry != prEntries.last) const SizedBox(height: 8),
+                    ],
+                  ],
+                ),
+              const VeltSection(label: 'Muscle balance'),
+              _MuscleBreakdownCard(history: filteredHistory, c: c),
+              const VeltSection(label: 'Bodyweight'),
+              _BodyweightCard(c: c, onLog: onLogBodyweight),
+              const VeltSection(
+                label: 'AI Coach Insights',
+                trailing: VeltPill('PRO', accent: true),
+              ),
+              _AiInsightsCard(c: c),
+              const SizedBox(height: 12),
+              VeltButton(
+                label: 'Log bodyweight',
+                secondary: true,
+                onTap: onLogBodyweight,
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _DeltaRow extends StatelessWidget {
+  const _DeltaRow({required this.deltaPercent, required this.c});
+  final int deltaPercent;
+  final AppColors c;
+  @override
+  Widget build(BuildContext context) {
+    final up = deltaPercent >= 0;
+    final color = up ? c.successLime : c.errorRose;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .1),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: color.withValues(alpha: .35)),
+      ),
+      child: Row(
+        children: [
+          Icon(up ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+              color: color, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              up
+                  ? 'Volume up ${deltaPercent.abs()}% vs previous period'
+                  : 'Volume down ${deltaPercent.abs()}% vs previous period',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                color: c.textPrimary,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AiInsightsCard extends StatelessWidget {
+  const _AiInsightsCard({required this.c});
+  final AppColors c;
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            c.accentIron.withValues(alpha: .22),
+            c.surfaceElevated,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: c.accentIron.withValues(alpha: .4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: c.accentIron,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.psychology_alt_rounded,
+                    color: c.accentIron.computeLuminance() > .55
+                        ? c.ink
+                        : Colors.white,
+                    size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Form score & plateau detection',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        color: c.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.1,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'AI analyzes your sets, finds weak links & suggests deloads',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        color: c.textSecondary,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final f in const [
+                'Plateau alerts',
+                'Volume periodization',
+                'Deload timing',
+                'Recovery score',
+              ])
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: c.surface.withValues(alpha: .55),
+                    borderRadius: BorderRadius.circular(999),
+                    border:
+                        Border.all(color: c.accentIron.withValues(alpha: .3)),
+                  ),
+                  child: Text(
+                    f,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      color: c.textPrimary,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          VeltButton(
+            label: 'Unlock with Pro',
+            onTap: () {
+              HapticFeedback.selectionClick();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PaywallScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BalanceLine extends StatelessWidget {
+  const _BalanceLine({
+    required this.label,
+    required this.value,
+    required this.pct,
+  });
+
+  final String label;
+  final String value;
+  final double pct;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).extension<AppColors>()!;
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(label,
+                  style: TextStyle(color: c.textSecondary, fontSize: 12)),
+            ),
+            Text(
+              value,
+              style: TextStyle(
+                color: c.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        VeltProgressBar(value: pct),
+      ],
+    );
+  }
+}
+
 class _PeriodSelector extends StatelessWidget {
   const _PeriodSelector(
       {required this.selected, required this.onSelect, required this.c});
@@ -312,8 +684,8 @@ class _KpiCard extends StatelessWidget {
             const SizedBox(height: 3),
             Text(
               unit,
-              style: AppTypography.caption(c.textSecondary).copyWith(
-                fontSize: 10),
+              style:
+                  AppTypography.caption(c.textSecondary).copyWith(fontSize: 10),
             ),
           ],
           const SizedBox(height: 6),
@@ -331,8 +703,8 @@ class _KpiCard extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               sublabel!,
-              style: AppTypography.caption(c.textTertiary).copyWith(
-                fontSize: 9, letterSpacing: 0.2),
+              style: AppTypography.caption(c.textTertiary)
+                  .copyWith(fontSize: 9, letterSpacing: 0.2),
             ),
           ],
         ],
@@ -375,9 +747,8 @@ class _VolumeChartState extends State<_VolumeChart> {
     final data = widget.data;
     final c = widget.c;
     final volumes = data.map((d) => d.volume).toList();
-    final maxVol = volumes.isEmpty
-        ? 0.0
-        : volumes.reduce((a, b) => a > b ? a : b);
+    final maxVol =
+        volumes.isEmpty ? 0.0 : volumes.reduce((a, b) => a > b ? a : b);
     final effectiveMax = maxVol <= 0 ? 1.0 : maxVol;
 
     final yMid = (effectiveMax / 2 / 1000).round() * 1000.0;
@@ -406,18 +777,18 @@ class _VolumeChartState extends State<_VolumeChart> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.bar_chart_rounded,
-                      size: 28, color: c.textTertiary.withValues(alpha: 0.5)),
+                        size: 28, color: c.textTertiary.withValues(alpha: 0.5)),
                     const SizedBox(height: 10),
                     Text(
                       'No data yet',
-                      style: AppTypography.titleS(c.textPrimary).copyWith(
-                        fontSize: 13, fontWeight: FontWeight.w600),
+                      style: AppTypography.titleS(c.textPrimary)
+                          .copyWith(fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Log workouts to build your volume trend.',
-                      style: AppTypography.bodyS(c.textTertiary).copyWith(
-                        fontSize: 11),
+                      style: AppTypography.bodyS(c.textTertiary)
+                          .copyWith(fontSize: 11),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -438,8 +809,8 @@ class _VolumeChartState extends State<_VolumeChart> {
                     if (nonEmpty > 0)
                       Text(
                         '$nonEmpty ${nonEmpty == 1 ? periodLower : '${periodLower}s'} with data',
-                        style: AppTypography.caption(c.textSecondary)
-                            .copyWith(fontSize: 10, fontWeight: FontWeight.w600),
+                        style: AppTypography.caption(c.textSecondary).copyWith(
+                            fontSize: 10, fontWeight: FontWeight.w600),
                       ),
                   ],
                 ),
@@ -457,14 +828,20 @@ class _VolumeChartState extends State<_VolumeChart> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(yLabel(yTop),
-                              style: AppTypography.caption(c.textTertiary)
-                                  .copyWith(fontSize: 9, fontFeatures: [const FontFeature.tabularFigures()])),
+                                style: AppTypography.caption(c.textTertiary)
+                                    .copyWith(fontSize: 9, fontFeatures: [
+                                  const FontFeature.tabularFigures()
+                                ])),
                             Text(yLabel(yMid),
-                              style: AppTypography.caption(c.textTertiary)
-                                  .copyWith(fontSize: 9, fontFeatures: [const FontFeature.tabularFigures()])),
+                                style: AppTypography.caption(c.textTertiary)
+                                    .copyWith(fontSize: 9, fontFeatures: [
+                                  const FontFeature.tabularFigures()
+                                ])),
                             Text('0',
-                              style: AppTypography.caption(c.textTertiary)
-                                  .copyWith(fontSize: 9, fontFeatures: [const FontFeature.tabularFigures()])),
+                                style: AppTypography.caption(c.textTertiary)
+                                    .copyWith(fontSize: 9, fontFeatures: [
+                                  const FontFeature.tabularFigures()
+                                ])),
                           ],
                         ),
                       ),
@@ -489,18 +866,18 @@ class _VolumeChartState extends State<_VolumeChart> {
                                     decoration: BoxDecoration(
                                       border: Border(
                                         left: BorderSide(
-                                          color: c.divider.withValues(
-                                              alpha: 0.5),
-                                          width: 0.5),
+                                            color: c.divider
+                                                .withValues(alpha: 0.5),
+                                            width: 0.5),
                                         bottom: BorderSide(
-                                          color: c.divider.withValues(
-                                              alpha: 0.5),
-                                          width: 0.5),
+                                            color: c.divider
+                                                .withValues(alpha: 0.5),
+                                            width: 0.5),
                                       ),
                                     ),
                                     child: Padding(
                                       padding: const EdgeInsets.only(
-                                        left: 4, bottom: 1),
+                                          left: 4, bottom: 1),
                                       child: Row(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.end,
@@ -508,17 +885,15 @@ class _VolumeChartState extends State<_VolumeChart> {
                                             data.asMap().entries.map((entry) {
                                           final i = entry.key;
                                           final d = entry.value;
-                                          final frac =
-                                              d.volume / effectiveMax;
+                                          final frac = d.volume / effectiveMax;
                                           final isCurrent =
                                               i == data.length - 1;
-                                          final isHovered =
-                                              i == _hoveredIndex;
+                                          final isHovered = i == _hoveredIndex;
                                           return Expanded(
                                             child: Padding(
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                horizontal: 3),
+                                                      horizontal: 3),
                                               child: FractionallySizedBox(
                                                 alignment:
                                                     Alignment.bottomCenter,
@@ -528,18 +903,21 @@ class _VolumeChartState extends State<_VolumeChart> {
                                                   duration: const Duration(
                                                       milliseconds: 500),
                                                   decoration: BoxDecoration(
-                                                    color: isHovered ||
-                                                            isCurrent
-                                                        ? c.accentIron
-                                                        : c.surfaceHigh,
+                                                    color:
+                                                        isHovered || isCurrent
+                                                            ? c.accentIron
+                                                            : c.surfaceHigh,
                                                     borderRadius:
                                                         const BorderRadius
                                                             .vertical(
-                                                      top: Radius.circular(3)),
+                                                            top:
+                                                                Radius.circular(
+                                                                    3)),
                                                     boxShadow: isHovered
                                                         ? [
                                                             BoxShadow(
-                                                              color: c.accentIron
+                                                              color: c
+                                                                  .accentIron
                                                                   .withValues(
                                                                       alpha:
                                                                           0.35),
@@ -652,14 +1030,15 @@ class _VolumeBarTooltip extends StatelessWidget {
             Text(
               '$volStr ${WeightUnit.suffix}',
               style: AppTypography.caption(c.accentIron).copyWith(
-                fontSize: 11, fontWeight: FontWeight.w700,
-                fontFeatures: [const FontFeature.tabularFigures()]),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  fontFeatures: [const FontFeature.tabularFigures()]),
               textAlign: TextAlign.center,
             ),
             Text(
               entry.label,
-              style: AppTypography.caption(c.textTertiary)
-                  .copyWith(fontSize: 10),
+              style:
+                  AppTypography.caption(c.textTertiary).copyWith(fontSize: 10),
               textAlign: TextAlign.center,
             ),
           ],
@@ -704,11 +1083,13 @@ class _BodyweightCardState extends State<_BodyweightCard> {
   List<({int dateMs, double kg})> _applyPeriod(
       List<({int dateMs, double kg})> all) {
     if (_bwPeriod == 'All') return all;
-    final cutoff = DateTime.now().subtract(switch (_bwPeriod) {
-      '3M' => const Duration(days: 90),
-      '1Y' => const Duration(days: 365),
-      _    => const Duration(days: 30), // 1M default
-    }).millisecondsSinceEpoch;
+    final cutoff = DateTime.now()
+        .subtract(switch (_bwPeriod) {
+          '3M' => const Duration(days: 90),
+          '1Y' => const Duration(days: 365),
+          _ => const Duration(days: 30), // 1M default
+        })
+        .millisecondsSinceEpoch;
     return all.where((e) => e.dateMs >= cutoff).toList();
   }
 
@@ -733,34 +1114,34 @@ class _BodyweightCardState extends State<_BodyweightCard> {
           child: Column(
             children: [
               Icon(Icons.monitor_weight_outlined,
-                size: 36, color: c.textTertiary.withValues(alpha: 0.6)),
+                  size: 36, color: c.textTertiary.withValues(alpha: 0.6)),
               const SizedBox(height: 10),
               Text(
                 'Track your bodyweight',
-                style: AppTypography.titleS(c.textPrimary).copyWith(
-                  fontSize: 14, fontWeight: FontWeight.w600),
+                style: AppTypography.titleS(c.textPrimary)
+                    .copyWith(fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 4),
               Text(
                 'Log today\'s weight to start your trend.',
-                style: AppTypography.bodyS(c.textTertiary).copyWith(
-                  fontSize: 12),
+                style:
+                    AppTypography.bodyS(c.textTertiary).copyWith(fontSize: 12),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20, vertical: 9),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
                 decoration: BoxDecoration(
                   color: c.accentIron.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppRadius.full),
                   border: Border.all(
-                    color: c.accentIron.withValues(alpha: 0.35), width: 0.5),
+                      color: c.accentIron.withValues(alpha: 0.35), width: 0.5),
                 ),
                 child: Text(
                   '+ Log today',
-                  style: AppTypography.bodyS(c.accentIron).copyWith(
-                    fontWeight: FontWeight.w600, fontSize: 12),
+                  style: AppTypography.bodyS(c.accentIron)
+                      .copyWith(fontWeight: FontWeight.w600, fontSize: 12),
                 ),
               ),
             ],
@@ -769,10 +1150,10 @@ class _BodyweightCardState extends State<_BodyweightCard> {
       );
     }
 
-    final effectiveHistory = history.isNotEmpty ? history : <({int dateMs, double kg})>[];
-    final displayKg = bwKg ?? (effectiveHistory.isNotEmpty
-        ? effectiveHistory.last.kg
-        : 0.0);
+    final effectiveHistory =
+        history.isNotEmpty ? history : <({int dateMs, double kg})>[];
+    final displayKg =
+        bwKg ?? (effectiveHistory.isNotEmpty ? effectiveHistory.last.kg : 0.0);
 
     final displayVal = WeightUnit.isLbs
         ? (displayKg * 2.20462).toStringAsFixed(1)
@@ -790,7 +1171,7 @@ class _BodyweightCardState extends State<_BodyweightCard> {
         '3M' => 'last 3 months',
         '1Y' => 'last year',
         'All' => 'all time',
-        _    => 'last 30 days',
+        _ => 'last 30 days',
       };
       trendText = '$sign$deltaDisplay ${WeightUnit.suffix} $periodLabel';
       final goal = PrefsService.fitnessGoal;
@@ -823,8 +1204,8 @@ class _BodyweightCardState extends State<_BodyweightCard> {
                 ),
                 TextSpan(
                   text: ' ${WeightUnit.suffix}',
-                  style: AppTypography.bodyM(c.textTertiary).copyWith(
-                    fontSize: 13, fontWeight: FontWeight.w400),
+                  style: AppTypography.bodyM(c.textTertiary)
+                      .copyWith(fontSize: 13, fontWeight: FontWeight.w400),
                 ),
               ],
             ),
@@ -833,8 +1214,8 @@ class _BodyweightCardState extends State<_BodyweightCard> {
             const SizedBox(height: 4),
             Text(
               trendText,
-              style: AppTypography.bodyS(trendColor).copyWith(
-                fontSize: 11, fontWeight: FontWeight.w600),
+              style: AppTypography.bodyS(trendColor)
+                  .copyWith(fontSize: 11, fontWeight: FontWeight.w600),
             ),
           ],
           if (allHistory.length >= 2) ...[
@@ -848,14 +1229,11 @@ class _BodyweightCardState extends State<_BodyweightCard> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
                     margin: const EdgeInsets.only(right: 6),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: active
-                          ? c.accentIron
-                          : c.surfaceHigh,
-                      borderRadius:
-                          BorderRadius.circular(AppRadius.full),
+                      color: active ? c.accentIron : c.surfaceHigh,
+                      borderRadius: BorderRadius.circular(AppRadius.full),
                     ),
                     child: Text(
                       p,
@@ -863,9 +1241,7 @@ class _BodyweightCardState extends State<_BodyweightCard> {
                         active ? Colors.white : c.textTertiary,
                       ).copyWith(
                         fontSize: 11,
-                        fontWeight: active
-                            ? FontWeight.w700
-                            : FontWeight.w500,
+                        fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                       ),
                     ),
                   ),
@@ -891,8 +1267,8 @@ class _BodyweightCardState extends State<_BodyweightCard> {
                 child: Center(
                   child: Text(
                     'No entries in this period.',
-                    style: AppTypography.bodyS(c.textTertiary).copyWith(
-                      fontSize: 12),
+                    style: AppTypography.bodyS(c.textTertiary)
+                        .copyWith(fontSize: 12),
                   ),
                 ),
               ),
@@ -1010,62 +1386,65 @@ class _PRListCard extends StatelessWidget {
             children: [
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) =>
-                    PRDetailScreen(exerciseName: entry.key))),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 12),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 32, height: 32,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: c.accentIron.withValues(alpha: 0.15),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            PRDetailScreen(exerciseName: entry.key))),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: c.accentIron.withValues(alpha: 0.15),
+                        ),
+                        child: Center(
+                          child: Icon(Icons.emoji_events_outlined,
+                              size: 14, color: c.accentIron),
+                        ),
                       ),
-                      child: Center(
-                        child: Icon(Icons.emoji_events_outlined,
-                          size: 14, color: c.accentIron),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              entry.key,
+                              style: AppTypography.titleM(c.textPrimary)
+                                  .copyWith(
+                                      fontSize: 14,
+                                      letterSpacing: -0.05,
+                                      fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              entry.value.dateLabel,
+                              style: AppTypography.bodyS(c.textTertiary)
+                                  .copyWith(fontSize: 11),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            entry.key,
-                            style: AppTypography.titleM(c.textPrimary)
-                                .copyWith(
-                                  fontSize: 14,
-                                  letterSpacing: -0.05,
-                                  fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            entry.value.dateLabel,
-                            style: AppTypography.bodyS(c.textTertiary)
-                                .copyWith(fontSize: 11),
-                          ),
-                        ],
+                      Text(
+                        weightStr,
+                        style: AppTypography.displayM(c.accentIron).copyWith(
+                          fontSize: 16,
+                          letterSpacing: -0.3,
+                          fontWeight: FontWeight.w700,
+                          fontFeatures: [const FontFeature.tabularFigures()],
+                        ),
                       ),
-                    ),
-                    Text(
-                      weightStr,
-                      style: AppTypography.displayM(c.accentIron).copyWith(
-                        fontSize: 16,
-                        letterSpacing: -0.3,
-                        fontWeight: FontWeight.w700,
-                        fontFeatures: [const FontFeature.tabularFigures()],
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(Icons.chevron_right_rounded,
-                        size: 16, color: c.textTertiary),
-                  ],
+                      const SizedBox(width: 4),
+                      Icon(Icons.chevron_right_rounded,
+                          size: 16, color: c.textTertiary),
+                    ],
+                  ),
                 ),
-              ),
               ),
               if (i < entries.length - 1)
                 Divider(
@@ -1133,9 +1512,7 @@ class _MuscleBreakdownCard extends StatelessWidget {
           final i = e.key;
           final entry = e.value;
           final frac = maxVol > 0 ? entry.value / maxVol : 0.0;
-          final pct = totalVol > 0
-              ? (entry.value / totalVol * 100).round()
-              : 0;
+          final pct = totalVol > 0 ? (entry.value / totalVol * 100).round() : 0;
           final isLast = i == sorted.take(8).length - 1;
           return Padding(
             padding: EdgeInsets.only(bottom: isLast ? 8 : 12),
@@ -1148,7 +1525,7 @@ class _MuscleBreakdownCard extends StatelessWidget {
                       child: Text(
                         entry.key,
                         style: AppTypography.bodyS(c.textPrimary).copyWith(
-                          fontSize: 12, fontWeight: FontWeight.w600),
+                            fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                     ),
                     Text(
@@ -1156,8 +1533,9 @@ class _MuscleBreakdownCard extends StatelessWidget {
                       style: AppTypography.caption(
                         i == 0 ? c.accentIron : c.textSecondary,
                       ).copyWith(
-                        fontSize: 11, fontWeight: FontWeight.w700,
-                        fontFeatures: [const FontFeature.tabularFigures()]),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          fontFeatures: [const FontFeature.tabularFigures()]),
                     ),
                   ],
                 ),
@@ -1168,10 +1546,9 @@ class _MuscleBreakdownCard extends StatelessWidget {
                     value: frac.clamp(0.0, 1.0),
                     minHeight: 6,
                     backgroundColor: c.surfaceHigh,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      i == 0
-                          ? c.accentIron
-                          : c.accentIron.withValues(alpha: 0.5)),
+                    valueColor: AlwaysStoppedAnimation<Color>(i == 0
+                        ? c.accentIron
+                        : c.accentIron.withValues(alpha: 0.5)),
                   ),
                 ),
               ],
@@ -1210,14 +1587,15 @@ class _EmptySection extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 32, color: c.textTertiary.withValues(alpha: 0.6)),
+              Icon(icon,
+                  size: 32, color: c.textTertiary.withValues(alpha: 0.6)),
               const SizedBox(height: 10),
             ],
             if (title != null) ...[
               Text(
                 title!,
-                style: AppTypography.titleS(c.textPrimary).copyWith(
-                  fontSize: 13, fontWeight: FontWeight.w600),
+                style: AppTypography.titleS(c.textPrimary)
+                    .copyWith(fontSize: 13, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 4),
@@ -1297,11 +1675,13 @@ class _BwLogSheetState extends State<_BwLogSheet> {
     final c = widget.c;
     final suffix = WeightUnit.suffix;
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         decoration: BoxDecoration(
           color: c.surfaceElevated,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
         child: Column(
@@ -1310,7 +1690,8 @@ class _BwLogSheetState extends State<_BwLogSheet> {
           children: [
             Center(
               child: Container(
-                width: 36, height: 4,
+                width: 36,
+                height: 4,
                 decoration: BoxDecoration(
                   color: c.divider,
                   borderRadius: BorderRadius.circular(2),
@@ -1319,25 +1700,27 @@ class _BwLogSheetState extends State<_BwLogSheet> {
             ),
             const SizedBox(height: 20),
             Text('Log Bodyweight',
-              style: AppTypography.titleM(c.textPrimary).copyWith(
-                fontSize: 18, letterSpacing: -0.3)),
+                style: AppTypography.titleM(c.textPrimary)
+                    .copyWith(fontSize: 18, letterSpacing: -0.3)),
             const SizedBox(height: 4),
             Text("Today's entry will update your trend chart",
-              style: AppTypography.bodyS(c.textTertiary).copyWith(fontSize: 12)),
+                style:
+                    AppTypography.bodyS(c.textTertiary).copyWith(fontSize: 12)),
             const SizedBox(height: 20),
             TextField(
               controller: _ctrl,
               autofocus: true,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              style: AppTypography.displayM(c.textPrimary).copyWith(
-                fontSize: 32, letterSpacing: -1),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              style: AppTypography.displayM(c.textPrimary)
+                  .copyWith(fontSize: 32, letterSpacing: -1),
               decoration: InputDecoration(
                 hintText: '0.0',
-                hintStyle: AppTypography.displayM(c.textTertiary).copyWith(
-                  fontSize: 32, letterSpacing: -1),
+                hintStyle: AppTypography.displayM(c.textTertiary)
+                    .copyWith(fontSize: 32, letterSpacing: -1),
                 suffixText: suffix,
-                suffixStyle: AppTypography.bodyM(c.textSecondary).copyWith(
-                  fontSize: 16),
+                suffixStyle:
+                    AppTypography.bodyM(c.textSecondary).copyWith(fontSize: 16),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                   borderSide: BorderSide(color: c.divider),
@@ -1352,8 +1735,8 @@ class _BwLogSheetState extends State<_BwLogSheet> {
                 ),
                 filled: true,
                 fillColor: c.surface,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 14),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
             ),
             const SizedBox(height: 16),
@@ -1366,16 +1749,17 @@ class _BwLogSheetState extends State<_BwLogSheet> {
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.sm)),
+                      borderRadius: BorderRadius.circular(AppRadius.sm)),
                 ),
                 child: _saving
                     ? const SizedBox(
-                        width: 18, height: 18,
+                        width: 18,
+                        height: 18,
                         child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white))
+                            strokeWidth: 2, color: Colors.white))
                     : Text('Save',
-                        style: AppTypography.titleM(Colors.white).copyWith(
-                          fontSize: 15)),
+                        style: AppTypography.titleM(Colors.white)
+                            .copyWith(fontSize: 15)),
               ),
             ),
           ],

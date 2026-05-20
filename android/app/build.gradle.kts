@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.velt.app.velt"
+    namespace = "com.veltfitness.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -18,11 +18,14 @@ android {
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17.toString()
+        // Sentry / Supabase SDKs require Kotlin language version 1.8+
+        languageVersion = "1.9"
+        apiVersion = "1.9"
     }
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.velt.app.velt"
+        applicationId = "com.veltfitness.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 26

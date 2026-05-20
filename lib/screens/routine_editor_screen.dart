@@ -1,3 +1,5 @@
+// ignore_for_file: dead_code, unused_element, unused_import
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
@@ -10,11 +12,17 @@ import '../services/routine_store.dart';
 import '../utils/weight_unit.dart';
 import '../models/workout.dart' show WorkoutExercise;
 import 'active_workout_screen.dart' show ExercisePickerSheet;
+import '../widgets/velt_redesign_widgets.dart';
 
 const _palette = [
-  Color(0xFFD97706), Color(0xFF3B82F6), Color(0xFF10B981),
-  Color(0xFF8B5CF6), Color(0xFFEC4899), Color(0xFFEF4444),
-  Color(0xFF06B6D4), Color(0xFF84CC16),
+  Color(0xFFD97706),
+  Color(0xFF3B82F6),
+  Color(0xFF10B981),
+  Color(0xFF8B5CF6),
+  Color(0xFFEC4899),
+  Color(0xFFEF4444),
+  Color(0xFF06B6D4),
+  Color(0xFF84CC16),
 ];
 
 class RoutineEditorScreen extends StatefulWidget {
@@ -69,7 +77,7 @@ class _RoutineEditorScreenState extends State<RoutineEditorScreen> {
         content: const Text('Add at least one exercise to save'),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.sm)),
+            borderRadius: BorderRadius.circular(AppRadius.sm)),
       ));
       return;
     }
@@ -82,7 +90,7 @@ class _RoutineEditorScreenState extends State<RoutineEditorScreen> {
           content: Text('A routine named "$name" already exists'),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.sm)),
+              borderRadius: BorderRadius.circular(AppRadius.sm)),
         ),
       );
       return;
@@ -140,6 +148,26 @@ class _RoutineEditorScreenState extends State<RoutineEditorScreen> {
   Widget build(BuildContext context) {
     final c = Theme.of(context).extension<AppColors>()!;
 
+    return _FreshRoutineEditorScreen(
+      isEdit: _isEdit,
+      nameController: _nameCtrl,
+      colorValue: _colorValue,
+      exercises: _exercises,
+      onBack: () => Navigator.of(context).pop(),
+      onSave: _save,
+      onAddExercise: _addExercise,
+      onColorChanged: (value) => setState(() => _colorValue = value),
+      onEditExercise: _editSets,
+      onRemoveExercise: _removeExercise,
+      onReorder: (oldIdx, newIdx) {
+        setState(() {
+          if (newIdx > oldIdx) newIdx--;
+          final item = _exercises.removeAt(oldIdx);
+          _exercises.insert(newIdx, item);
+        });
+      },
+    );
+
     return Scaffold(
       backgroundColor: c.surface,
       body: SafeArea(
@@ -149,7 +177,7 @@ class _RoutineEditorScreenState extends State<RoutineEditorScreen> {
             // Top bar
             Container(
               padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                  horizontal: AppSpacing.md, vertical: AppSpacing.sm),
               decoration: BoxDecoration(
                 color: c.surface,
                 border: Border(bottom: BorderSide(color: c.divider)),
@@ -159,7 +187,8 @@ class _RoutineEditorScreenState extends State<RoutineEditorScreen> {
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
                     child: SizedBox(
-                      width: 44, height: 44,
+                      width: 44,
+                      height: 44,
                       child: Center(
                         child: Text('✕',
                             style: TextStyle(
@@ -182,8 +211,7 @@ class _RoutineEditorScreenState extends State<RoutineEditorScreen> {
                           horizontal: AppSpacing.sm, vertical: 8),
                       decoration: BoxDecoration(
                         color: c.accentIron,
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.full),
+                        borderRadius: BorderRadius.circular(AppRadius.full),
                       ),
                       child: Text(
                         'Save',
@@ -199,8 +227,7 @@ class _RoutineEditorScreenState extends State<RoutineEditorScreen> {
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.md, AppSpacing.lg,
-                    AppSpacing.md, AppSpacing.xl),
+                    AppSpacing.md, AppSpacing.lg, AppSpacing.md, AppSpacing.xl),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -210,8 +237,8 @@ class _RoutineEditorScreenState extends State<RoutineEditorScreen> {
                         color: c.surfaceElevated,
                         borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                       child: TextField(
                         controller: _nameCtrl,
                         autofocus: !_isEdit,
@@ -239,23 +266,20 @@ class _RoutineEditorScreenState extends State<RoutineEditorScreen> {
                           onTap: () =>
                               setState(() => _colorValue = color.toARGB32()),
                           child: AnimatedContainer(
-                            duration:
-                                const Duration(milliseconds: 150),
-                            margin: const EdgeInsets.only(
-                                right: AppSpacing.sm),
-                            width: 32, height: 32,
+                            duration: const Duration(milliseconds: 150),
+                            margin: const EdgeInsets.only(right: AppSpacing.sm),
+                            width: 32,
+                            height: 32,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: color,
                               border: active
-                                  ? Border.all(
-                                      color: Colors.white, width: 3)
+                                  ? Border.all(color: Colors.white, width: 3)
                                   : null,
                               boxShadow: active
                                   ? [
                                       BoxShadow(
-                                          color: color.withValues(
-                                              alpha: 0.5),
+                                          color: color.withValues(alpha: 0.5),
                                           blurRadius: 8,
                                           spreadRadius: 1)
                                     ]
@@ -287,11 +311,9 @@ class _RoutineEditorScreenState extends State<RoutineEditorScreen> {
                         padding: const EdgeInsets.all(AppSpacing.xl),
                         decoration: BoxDecoration(
                           color: c.surfaceElevated,
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.md),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                           border: Border.all(
-                              color: c.divider,
-                              style: BorderStyle.solid),
+                              color: c.divider, style: BorderStyle.solid),
                         ),
                         child: Column(
                           children: [
@@ -313,8 +335,7 @@ class _RoutineEditorScreenState extends State<RoutineEditorScreen> {
                         onReorder: (oldIdx, newIdx) {
                           setState(() {
                             if (newIdx > oldIdx) newIdx--;
-                            final item =
-                                _exercises.removeAt(oldIdx);
+                            final item = _exercises.removeAt(oldIdx);
                             _exercises.insert(newIdx, item);
                           });
                         },
@@ -348,6 +369,209 @@ class _RoutineEditorScreenState extends State<RoutineEditorScreen> {
 }
 
 // ── Exercise item in editor ────────────────────────────────
+class _FreshRoutineEditorScreen extends StatelessWidget {
+  const _FreshRoutineEditorScreen({
+    required this.isEdit,
+    required this.nameController,
+    required this.colorValue,
+    required this.exercises,
+    required this.onBack,
+    required this.onSave,
+    required this.onAddExercise,
+    required this.onColorChanged,
+    required this.onEditExercise,
+    required this.onRemoveExercise,
+    required this.onReorder,
+  });
+
+  final bool isEdit;
+  final TextEditingController nameController;
+  final int colorValue;
+  final List<WorkoutExercise> exercises;
+  final VoidCallback onBack;
+  final VoidCallback onSave;
+  final VoidCallback onAddExercise;
+  final ValueChanged<int> onColorChanged;
+  final ValueChanged<int> onEditExercise;
+  final ValueChanged<int> onRemoveExercise;
+  final ReorderCallback onReorder;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).extension<AppColors>()!;
+    final accent = Color(colorValue);
+
+    return VeltStaticScreen(
+      padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          VeltTopBar(
+            title: isEdit ? 'Edit routine' : 'New routine',
+            subtitle: '${exercises.length} exercises',
+            onBack: onBack,
+            trailing: GestureDetector(
+              onTap: onSave,
+              child: const VeltPill('Save', accent: true),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  VeltPanel(
+                    child: TextField(
+                      controller: nameController,
+                      autofocus: !isEdit,
+                      style: TextStyle(
+                        color: c.textPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Routine name',
+                        hintStyle: TextStyle(
+                          color: c.textTertiary,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  const VeltSection(label: 'Color'),
+                  VeltPanel(
+                    child: Row(
+                      children: [
+                        for (final color in _palette) ...[
+                          GestureDetector(
+                            onTap: () => onColorChanged(color.toARGB32()),
+                            child: Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                color: color,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: color.toARGB32() == colorValue
+                                      ? c.textPrimary
+                                      : c.divider,
+                                  width: color.toARGB32() == colorValue ? 2 : 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (color != _palette.last) const SizedBox(width: 8),
+                        ],
+                      ],
+                    ),
+                  ),
+                  VeltSection(
+                    label: 'Exercises',
+                    trailing: VeltPill('${exercises.length}', accent: true),
+                  ),
+                  if (exercises.isEmpty)
+                    VeltPanel(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 28),
+                        child: Column(
+                          children: [
+                            const VeltLabel('No exercises yet'),
+                            const SizedBox(height: 12),
+                            VeltButton(
+                              label: 'Add exercise',
+                              onTap: onAddExercise,
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    ReorderableListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: exercises.length,
+                      onReorder: onReorder,
+                      proxyDecorator: (child, index, animation) => Material(
+                        color: Colors.transparent,
+                        child: child,
+                      ),
+                      itemBuilder: (_, i) {
+                        final ex = exercises[i];
+                        return Padding(
+                          key: ValueKey(ex.id),
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _FreshRoutineExerciseTile(
+                            exercise: ex,
+                            accent: accent,
+                            onEdit: () => onEditExercise(i),
+                            onRemove: () => onRemoveExercise(i),
+                          ),
+                        );
+                      },
+                    ),
+                  if (exercises.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    VeltButton(
+                      label: 'Add exercise',
+                      secondary: true,
+                      onTap: onAddExercise,
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FreshRoutineExerciseTile extends StatelessWidget {
+  const _FreshRoutineExerciseTile({
+    required this.exercise,
+    required this.accent,
+    required this.onEdit,
+    required this.onRemove,
+  });
+
+  final WorkoutExercise exercise;
+  final Color accent;
+  final VoidCallback onEdit;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final totalSets = exercise.sets.length;
+    return VeltRowCard(
+      icon: exercise.name.characters.first.toUpperCase(),
+      title: exercise.name,
+      subtitle: '${exercise.muscle} · ${exercise.equipment} · $totalSets sets',
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: onEdit,
+            child: const VeltPill('Edit', accent: true),
+          ),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: onRemove,
+            child: const VeltPill('Remove', error: true),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ExerciseItem extends StatelessWidget {
   const _ExerciseItem({
     super.key,
@@ -365,16 +589,16 @@ class _ExerciseItem extends StatelessWidget {
   final AppColors c;
 
   String get _setsSummary {
-    final sets = exercise.sets
-        .where((s) => s.type != SetType.warmup)
-        .toList();
+    final sets = exercise.sets.where((s) => s.type != SetType.warmup).toList();
     if (sets.isEmpty) return '0 sets';
     final reps = sets.first.reps;
     final allSameReps = sets.every((s) => s.reps == reps);
     final weight = sets.first.weight;
     final allSameWeight = sets.every((s) => s.weight == weight);
     final weightStr = allSameWeight
-        ? (weight == 0 ? 'BW' : '${weight % 1 == 0 ? weight.toInt() : weight} ${WeightUnit.suffix}')
+        ? (weight == 0
+            ? 'BW'
+            : '${weight % 1 == 0 ? weight.toInt() : weight} ${WeightUnit.suffix}')
         : 'varies';
     final repsStr = allSameReps ? '$reps reps' : 'varies';
     return '${sets.length} × $repsStr · $weightStr';
@@ -402,24 +626,21 @@ class _ExerciseItem extends StatelessWidget {
           children: [
             Text(
               '${exercise.muscle} · ${exercise.equipment}',
-              style: AppTypography.bodyS(c.textTertiary)
-                  .copyWith(fontSize: 11),
+              style: AppTypography.bodyS(c.textTertiary).copyWith(fontSize: 11),
             ),
             const SizedBox(height: 2),
             GestureDetector(
               onTap: onEdit,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: accentColor.withValues(alpha: 0.12),
-                  borderRadius:
-                      BorderRadius.circular(AppRadius.full),
+                  borderRadius: BorderRadius.circular(AppRadius.full),
                 ),
                 child: Text(
                   _setsSummary,
-                  style: AppTypography.bodyS(accentColor).copyWith(
-                      fontSize: 11, fontWeight: FontWeight.w600),
+                  style: AppTypography.bodyS(accentColor)
+                      .copyWith(fontSize: 11, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -516,8 +737,7 @@ class _EditSetsSheetState extends State<_EditSetsSheet> {
     setState(() {
       final s = _sets[i];
       _sets[i] = SetRowData(
-          index: s.index, type: s.type,
-          weight: w, reps: s.reps, prev: s.prev);
+          index: s.index, type: s.type, weight: w, reps: s.reps, prev: s.prev);
     });
     _notify();
   }
@@ -526,8 +746,11 @@ class _EditSetsSheetState extends State<_EditSetsSheet> {
     setState(() {
       final s = _sets[i];
       _sets[i] = SetRowData(
-          index: s.index, type: s.type,
-          weight: s.weight, reps: r, prev: s.prev);
+          index: s.index,
+          type: s.type,
+          weight: s.weight,
+          reps: r,
+          prev: s.prev);
     });
     _notify();
   }
@@ -541,8 +764,11 @@ class _EditSetsSheetState extends State<_EditSetsSheet> {
               ? SetType.drop
               : SetType.warmup;
       _sets[i] = SetRowData(
-          index: s.index, type: next,
-          weight: s.weight, reps: s.reps, prev: s.prev);
+          index: s.index,
+          type: next,
+          weight: s.weight,
+          reps: s.reps,
+          prev: s.prev);
     });
     _notify();
   }
@@ -562,7 +788,8 @@ class _EditSetsSheetState extends State<_EditSetsSheet> {
         children: [
           Container(
             margin: const EdgeInsets.only(top: 12),
-            width: 36, height: 4,
+            width: 36,
+            height: 4,
             decoration: BoxDecoration(
               color: c.divider,
               borderRadius: BorderRadius.circular(AppRadius.full),
@@ -579,8 +806,7 @@ class _EditSetsSheetState extends State<_EditSetsSheet> {
                     children: [
                       Text(widget.exercise.name,
                           style: AppTypography.titleM(c.textPrimary)
-                              .copyWith(
-                                  fontSize: 16, letterSpacing: -0.1)),
+                              .copyWith(fontSize: 16, letterSpacing: -0.1)),
                       Text(
                           '${widget.exercise.muscle} · ${widget.exercise.equipment}',
                           style: AppTypography.bodyS(c.textTertiary)
@@ -626,24 +852,24 @@ class _EditSetsSheetState extends State<_EditSetsSheet> {
               itemBuilder: (_, i) {
                 final s = _sets[i];
                 final typeLabel = switch (s.type) {
-                  SetType.warmup  => 'W',
-                  SetType.drop    => 'D',
+                  SetType.warmup => 'W',
+                  SetType.drop => 'D',
                   SetType.failure => 'F',
-                  SetType.normal  => '${i + 1}',
+                  SetType.normal => '${i + 1}',
                 };
                 final typeColor = switch (s.type) {
-                  SetType.warmup  => c.accentIron,
-                  SetType.drop    => c.textTertiary,
+                  SetType.warmup => c.accentIron,
+                  SetType.drop => c.textTertiary,
                   SetType.failure => c.errorRose,
-                  SetType.normal  => c.textTertiary,
+                  SetType.normal => c.textTertiary,
                 };
                 return Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.md, vertical: 8),
                   decoration: BoxDecoration(
                     border: Border(
-                      bottom: BorderSide(
-                          color: c.divider.withValues(alpha: 0.27))),
+                        bottom: BorderSide(
+                            color: c.divider.withValues(alpha: 0.27))),
                   ),
                   child: Row(
                     children: [
@@ -652,11 +878,12 @@ class _EditSetsSheetState extends State<_EditSetsSheet> {
                           onTap: () => _toggleType(i),
                           child: Center(
                             child: Container(
-                              width: 28, height: 28,
+                              width: 28,
+                              height: 28,
                               decoration: BoxDecoration(
-                                color:
-                                    typeColor.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(AppRadius.xs),
+                                color: typeColor.withValues(alpha: 0.15),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.xs),
                               ),
                               child: Center(
                                 child: Text(typeLabel,
@@ -669,13 +896,15 @@ class _EditSetsSheetState extends State<_EditSetsSheet> {
                           ),
                         ),
                       ),
-                      Expanded(child: _MiniStepper(
+                      Expanded(
+                          child: _MiniStepper(
                         value: s.weight,
                         step: 2.5,
                         onChanged: (v) => _updateWeight(i, v),
                         c: c,
                       )),
-                      Expanded(child: _MiniStepper(
+                      Expanded(
+                          child: _MiniStepper(
                         value: s.reps.toDouble(),
                         step: 1,
                         onChanged: (v) => _updateReps(i, v.toInt()),
@@ -698,8 +927,7 @@ class _EditSetsSheetState extends State<_EditSetsSheet> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md, AppSpacing.sm,
-                AppSpacing.md, AppSpacing.md),
+                AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.md),
             child: SafeArea(
               top: false,
               child: GhostButton(
@@ -733,18 +961,17 @@ class _MiniStepper extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         GestureDetector(
-          onTap: () =>
-              onChanged((value - step).clamp(0, double.infinity)),
+          onTap: () => onChanged((value - step).clamp(0, double.infinity)),
           child: Container(
-            width: 28, height: 28,
+            width: 28,
+            height: 28,
             decoration: BoxDecoration(
               color: c.surfaceHigh,
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: Center(
               child: Text('−',
-                  style: TextStyle(
-                      fontSize: 16, color: c.textSecondary)),
+                  style: TextStyle(fontSize: 16, color: c.textSecondary)),
             ),
           ),
         ),
@@ -762,15 +989,15 @@ class _MiniStepper extends StatelessWidget {
         GestureDetector(
           onTap: () => onChanged(value + step),
           child: Container(
-            width: 28, height: 28,
+            width: 28,
+            height: 28,
             decoration: BoxDecoration(
               color: c.surfaceHigh,
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: Center(
               child: Text('+',
-                  style: TextStyle(
-                      fontSize: 16, color: c.textSecondary)),
+                  style: TextStyle(fontSize: 16, color: c.textSecondary)),
             ),
           ),
         ),

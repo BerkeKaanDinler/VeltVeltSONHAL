@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VELT Themed Screen Previews</title>
+  <style>
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: #080908;
+      color: #f4f7f0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body { padding: 24px; }
+    h1 { margin: 0 0 18px; font-size: 20px; line-height: 1.2; }
+    h2 { margin: 28px 0 12px; color: #cbd4c7; font-size: 13px; text-transform: uppercase; }
+    img {
+      width: min(100%, 2074px);
+      height: auto;
+      display: block;
+      border-radius: 12px;
+      background: #111412;
+      box-shadow: 0 20px 60px rgba(0,0,0,.34);
+    }
+  </style>
+</head>
+<body>
+  <h1>VELT · All Themed Screens</h1>
+  <div id="root"></div>
+  <script>
+    const screens = [
+      ["00-onboarding", "Onboarding"],
+      ["01-home", "Home"],
+      ["02-train", "Train"],
+      ["03-program-detail", "Program Detail"],
+      ["04-routine-editor", "Routine Editor"],
+      ["05-active-workout", "Active Workout"],
+      ["06-workout-summary", "Workout Summary"],
+      ["07-nutrition", "Nutrition"],
+      ["08-progress", "Progress"],
+      ["09-workout-history", "Workout History"],
+      ["10-workout-detail", "Workout Detail"],
+      ["11-exercise-detail", "Exercise Detail"],
+      ["12-pr-detail", "PR Detail"],
+      ["13-profile", "Profile"],
+      ["14-pro", "VELT Pro"],
+    ];
+
+    document.getElementById("root").innerHTML = screens.map(([slug, label]) => {
+      const filename = slug === "01-home" || slug === "02-train"
+        ? `exports/${slug}-all-themes.png`
+        : `exports/${slug}-all-themes.png`;
+      return `<section><h2>${label}</h2><img src="${filename}" alt="${label} all themes" loading="lazy" /></section>`;
+    }).join("");
+  </script>
+</body>
+</html>

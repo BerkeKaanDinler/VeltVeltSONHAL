@@ -109,6 +109,55 @@ class WorkoutHistoryStore {
     return null;
   }
 
+  /// Build a fresh template from a previously completed workout.
+  /// Sets keep weight/reps as starting values, isDone is reset, and `prev`
+  /// is populated from the historical performance so the user sees what
+  /// they hit last time.
+  static List<WorkoutExercise> templateFromCompleted(CompletedWorkout source) {
+    return source.exercises.map((ex) {
+      final newSets = ex.sets
+          .asMap()
+          .entries
+          .map((entry) {
+            final s = entry.value;
+            return SetRowData(
+              index: entry.key,
+              type: s.type,
+              // Reset isDone so user can re-log the session
+              weight: s.weight,
+              reps: s.reps,
+              prev: (weight: s.weight, reps: s.reps),
+              isDone: false,
+              rpe: null,
+            );
+          })
+          .toList();
+      return WorkoutExercise(
+        id: ex.id,
+        name: ex.name,
+        muscle: ex.muscle,
+        equipment: ex.equipment,
+        notes: ex.notes,
+        supersetId: ex.supersetId,
+        sets: newSets,
+      );
+    }).toList();
+  }
+
+  /// Returns up to [limit] distinct recent routine templates from history,
+  /// keyed by routine name (most recent occurrence wins).
+  static List<CompletedWorkout> recentTemplates({int limit = 5}) {
+    final seen = <String>{};
+    final result = <CompletedWorkout>[];
+    for (final w in history.value) {
+      if (seen.add(w.routineName)) {
+        result.add(w);
+        if (result.length >= limit) break;
+      }
+    }
+    return result;
+  }
+
   // Enrich exercises with previous performance data
   static List<WorkoutExercise> enrichWithPrev(List<WorkoutExercise> exercises) {
     return exercises.map((ex) {

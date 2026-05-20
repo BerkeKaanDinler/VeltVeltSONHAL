@@ -107,15 +107,17 @@ abstract class AppTheme {
   );
 
   // ── Public theme getters ──────────────────────────────────
-  static ThemeData get darkIron  => _build(AppColors.ironDark);
-  static ThemeData get slate     => _build(AppColors.slateMono);
-  static ThemeData get roseGold  => _build(AppColors.roseGold);
-  static ThemeData get emerald   => _build(AppColors.emeraldPremium);
+  static ThemeData get darkIron   => _build(AppColors.ironDark);
+  static ThemeData get slate      => _build(AppColors.slateMono);
+  static ThemeData get roseGold   => _build(AppColors.roseGold);
+  static ThemeData get emerald    => _build(AppColors.emeraldPremium);
+  static ThemeData get warmPaper  => _build(AppColors.warmPaper);
 
   static const Map<String, AppColors> allThemes = {
     'iron':     AppColors.ironDark,
     'slate':    AppColors.slateMono,
     'roseGold': AppColors.roseGold,
     'emerald':  AppColors.emeraldPremium,
+    'warm':     AppColors.warmPaper,
   };
 }

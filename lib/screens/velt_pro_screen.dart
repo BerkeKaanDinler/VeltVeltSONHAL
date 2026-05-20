@@ -1,13 +1,16 @@
+// ignore_for_file: dead_code, unused_element, unused_import
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../widgets/shared_widgets.dart';
+import '../widgets/velt_redesign_widgets.dart';
 
-const _priceYearly  = r'$29.99';
+const _priceYearly = r'$29.99';
 const _priceMonthly = r'$4.99';
-const _saveBadge    = 'Save 50%';
+const _saveBadge = 'Save 50%';
 
 // ══════════════════════════════════════════════════════════
 //  VELT PRO SCREEN  (UI only — no real payments)
@@ -47,6 +50,20 @@ class _VeltProScreenState extends State<VeltProScreen> {
     final c = Theme.of(context).extension<AppColors>()!;
     const ctaLabel = 'Get VELT Pro — Coming Soon';
 
+    return _FreshVeltProScreen(
+      yearlySelected: _yearlySelected,
+      onSelectYearly: () {
+        HapticFeedback.selectionClick();
+        setState(() => _yearlySelected = true);
+      },
+      onSelectMonthly: () {
+        HapticFeedback.selectionClick();
+        setState(() => _yearlySelected = false);
+      },
+      onPurchase: _handlePurchase,
+      onRestore: _handleRestore,
+    );
+
     return Scaffold(
       backgroundColor: c.surface,
       body: SafeArea(
@@ -68,8 +85,8 @@ class _VeltProScreenState extends State<VeltProScreen> {
                     onTap: _handleRestore,
                     child: Text(
                       'Restore',
-                      style: AppTypography.bodyS(c.textSecondary).copyWith(
-                          fontSize: 13, fontWeight: FontWeight.w500),
+                      style: AppTypography.bodyS(c.textSecondary)
+                          .copyWith(fontSize: 13, fontWeight: FontWeight.w500),
                     ),
                   ),
                 ],
@@ -79,9 +96,8 @@ class _VeltProScreenState extends State<VeltProScreen> {
             // Scrollable body
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.screenH, AppSpacing.md,
-                  AppSpacing.screenH, AppSpacing.xl),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.screenH,
+                    AppSpacing.md, AppSpacing.screenH, AppSpacing.xl),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -126,8 +142,8 @@ class _VeltProScreenState extends State<VeltProScreen> {
                       decoration: BoxDecoration(
                         color: c.surfaceElevated,
                         borderRadius: BorderRadius.circular(AppRadius.md),
-                        border: Border.all(
-                            color: c.divider.withValues(alpha: 0.5)),
+                        border:
+                            Border.all(color: c.divider.withValues(alpha: 0.5)),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: const Column(
@@ -237,6 +253,215 @@ class _VeltProScreenState extends State<VeltProScreen> {
 }
 
 // ── Benefit row ────────────────────────────────────────────────
+class _FreshVeltProScreen extends StatelessWidget {
+  const _FreshVeltProScreen({
+    required this.yearlySelected,
+    required this.onSelectYearly,
+    required this.onSelectMonthly,
+    required this.onPurchase,
+    required this.onRestore,
+  });
+
+  final bool yearlySelected;
+  final VoidCallback onSelectYearly;
+  final VoidCallback onSelectMonthly;
+  final VoidCallback onPurchase;
+  final VoidCallback onRestore;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).extension<AppColors>()!;
+    return VeltScreen(
+      bottomPadding: 34,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          VeltTopBar(
+            title: 'VELT Pro',
+            subtitle: 'Deeper training tools, no visual noise',
+            onBack: () => Navigator.pop(context),
+            trailing: GestureDetector(
+              onTap: onRestore,
+              child: const VeltPill('Restore'),
+            ),
+          ),
+          const SizedBox(height: 14),
+          VeltPanel(
+            hero: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const VeltLabel('Upgrade'),
+                const SizedBox(height: 10),
+                Text(
+                  'Train with better signal.',
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontSize: 34,
+                    height: 1.04,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Premium themes, advanced analytics, export tools and early feature access.',
+                  style: TextStyle(
+                    color: c.textSecondary,
+                    fontSize: 13,
+                    height: 1.45,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const VeltSection(label: 'Included'),
+          const _FreshProBenefit(
+            icon: 'T',
+            title: 'Premium themes',
+            subtitle: 'Rose Gold, Emerald and future exclusive palettes.',
+          ),
+          const SizedBox(height: 8),
+          const _FreshProBenefit(
+            icon: 'A',
+            title: 'Advanced analytics',
+            subtitle: 'Volume, consistency and PR trends with more context.',
+          ),
+          const SizedBox(height: 8),
+          const _FreshProBenefit(
+            icon: 'E',
+            title: 'Export and backups',
+            subtitle: 'CSV export and deeper history tools as Pro evolves.',
+          ),
+          const VeltSection(label: 'Choose plan'),
+          Row(
+            children: [
+              Expanded(
+                child: _FreshPlanChoice(
+                  title: 'Yearly',
+                  price: _priceYearly,
+                  subtitle: _saveBadge,
+                  selected: yearlySelected,
+                  onTap: onSelectYearly,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _FreshPlanChoice(
+                  title: 'Monthly',
+                  price: _priceMonthly,
+                  subtitle: 'Flexible',
+                  selected: !yearlySelected,
+                  onTap: onSelectMonthly,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          VeltButton(label: 'Get VELT Pro - Coming Soon', onTap: onPurchase),
+          const SizedBox(height: 12),
+          Center(
+            child: Text(
+              'Cancel anytime. Prices may vary by region.',
+              style: TextStyle(
+                color: c.textTertiary,
+                fontSize: 11,
+                height: 1.4,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FreshProBenefit extends StatelessWidget {
+  const _FreshProBenefit({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return VeltRowCard(
+      icon: icon,
+      title: title,
+      subtitle: subtitle,
+      trailing: const VeltPill('Pro', accent: true),
+    );
+  }
+}
+
+class _FreshPlanChoice extends StatelessWidget {
+  const _FreshPlanChoice({
+    required this.title,
+    required this.price,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String title;
+  final String price;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).extension<AppColors>()!;
+    return GestureDetector(
+      onTap: onTap,
+      child: VeltPanel(
+        borderColor: selected ? c.accentIron : null,
+        backgroundColor:
+            selected ? Color.lerp(c.surfaceElevated, c.accentIron, .10) : null,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(child: VeltLabel(title)),
+                if (selected) const VeltPill('selected', success: true),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              price,
+              style: TextStyle(
+                color: c.textPrimary,
+                fontSize: 25,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: c.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _BenefitRow extends StatelessWidget {
   const _BenefitRow({
     required this.icon,
@@ -331,8 +556,9 @@ class _PlanCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color:
-              selected ? c.accentIron.withValues(alpha: 0.08) : c.surfaceElevated,
+          color: selected
+              ? c.accentIron.withValues(alpha: 0.08)
+              : c.surfaceElevated,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
             color: selected ? c.accentIron : c.divider.withValues(alpha: 0.5),
@@ -386,14 +612,15 @@ class _PlanCard extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               period,
-              style: AppTypography.caption(c.textTertiary).copyWith(fontSize: 11),
+              style:
+                  AppTypography.caption(c.textTertiary).copyWith(fontSize: 11),
             ),
             if (bestValue) ...[
               const SizedBox(height: 8),
               Text(
                 'Best Value',
-                style: AppTypography.caption(c.accentIron).copyWith(
-                    fontSize: 10, fontWeight: FontWeight.w600),
+                style: AppTypography.caption(c.accentIron)
+                    .copyWith(fontSize: 10, fontWeight: FontWeight.w600),
               ),
             ],
           ],

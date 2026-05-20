@@ -1,3 +1,5 @@
+// ignore_for_file: dead_code, unused_element, unused_import
+
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
@@ -9,6 +11,7 @@ import '../services/prefs_service.dart';
 import '../utils/weight_unit.dart';
 import '../utils/app_constants.dart';
 import '../models/workout.dart' show CompletedWorkout;
+import '../widgets/velt_redesign_widgets.dart';
 
 // ─────────────────────────────────────────────────────────────
 //  DATA HELPERS
@@ -92,14 +95,16 @@ class _ExerciseStats {
           runningBest = sessionBest;
           prCount++;
         }
-        progression.add((label: _shortDate(w.completedAt), weight: sessionBest));
+        progression
+            .add((label: _shortDate(w.completedAt), weight: sessionBest));
 
         if (w.completedAt.isBefore(cutoff30) && sessionBest > thirtyDayBest) {
           thirtyDayBest = sessionBest;
         }
 
-        final setStrs = doneSets.take(4).map((s) => '${s.weight}×${s.reps}').join(', ');
-        final suffix  = doneSets.length > 4 ? '…' : '';
+        final setStrs =
+            doneSets.take(4).map((s) => '${s.weight}×${s.reps}').join(', ');
+        final suffix = doneSets.length > 4 ? '…' : '';
         recentSessions.add((
           date: w.relativeDate,
           sets: setStrs + suffix,
@@ -133,8 +138,20 @@ class _ExerciseStats {
   }
 
   static String _shortDate(DateTime d) {
-    const m = ['Jan','Feb','Mar','Apr','May','Jun',
-                'Jul','Aug','Sep','Oct','Nov','Dec'];
+    const m = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     return '${m[d.month - 1]} ${d.day}';
   }
 }
@@ -190,7 +207,8 @@ class _PRHistory {
       }
 
       if (sessionBest > 0) {
-        progression.add((label: _shortDate(w.completedAt), weight: sessionBest));
+        progression
+            .add((label: _shortDate(w.completedAt), weight: sessionBest));
         if (firstBest == 0) firstBest = sessionBest;
 
         if (sessionBest > runningBest) {
@@ -228,8 +246,20 @@ class _PRHistory {
   }
 
   static String _shortDate(DateTime d) {
-    const m = ['Jan','Feb','Mar','Apr','May','Jun',
-                'Jul','Aug','Sep','Oct','Nov','Dec'];
+    const m = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     return '${m[d.month - 1]} ${d.day}';
   }
 }
@@ -237,6 +267,245 @@ class _PRHistory {
 // ─────────────────────────────────────────────────────────────
 //  SHARED DETAIL HEADER
 // ─────────────────────────────────────────────────────────────
+
+class _FreshExerciseDetailScreen extends StatelessWidget {
+  const _FreshExerciseDetailScreen({
+    required this.exerciseName,
+    required this.data,
+    required this.note,
+    required this.onEditNote,
+  });
+
+  final String exerciseName;
+  final _ExerciseStats? data;
+  final String note;
+  final VoidCallback onEditNote;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).extension<AppColors>()!;
+    final stats = data;
+
+    if (stats == null) {
+      return VeltScreen(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            VeltTopBar(
+              title: exerciseName,
+              subtitle: 'No sessions logged yet',
+              onBack: () => Navigator.pop(context),
+            ),
+            const SizedBox(height: 24),
+            const VeltPanel(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 30),
+                child: Center(child: VeltLabel('No data yet')),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return VeltScreen(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          VeltTopBar(
+            title: exerciseName,
+            subtitle: '${stats.muscle} · ${stats.equipment}',
+            onBack: () => Navigator.pop(context),
+            trailing: VeltPill('${stats.prCount} PR', accent: true),
+          ),
+          const SizedBox(height: 14),
+          VeltPanel(
+            hero: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const VeltLabel('Current top set'),
+                const SizedBox(height: 10),
+                Text(
+                  stats.topSet,
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontSize: 36,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: VeltMetric(
+                        value: WeightUnit.formatVolume(stats.totalVolume),
+                        label: 'volume',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: VeltMetric(
+                        value: '${stats.sessionCount}',
+                        label: 'sessions',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: VeltMetric(
+                        value: stats.estimated1RM == null
+                            ? '-'
+                            : WeightUnit.format(stats.estimated1RM!),
+                        label: 'est 1rm',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (stats.progression.length >= 2) ...[
+            const VeltSection(label: 'Progress trend'),
+            const VeltLineChart(height: 118),
+          ],
+          VeltSection(
+            label: 'Exercise note',
+            trailing: VeltPill(note.isEmpty ? 'Add' : 'Edit', accent: true),
+          ),
+          GestureDetector(
+            onTap: onEditNote,
+            child: VeltPanel(
+              child: Text(
+                note.isEmpty
+                    ? 'Tap to add cues, setup notes or targets.'
+                    : note,
+                style: TextStyle(
+                  color: c.textSecondary,
+                  fontSize: 13,
+                  height: 1.45,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          const VeltSection(label: 'Recent sessions'),
+          for (final session in stats.recentSessions) ...[
+            VeltRowCard(
+              icon: session.isPR ? 'PR' : 'S',
+              title: session.date,
+              subtitle: session.sets,
+              trailing:
+                  session.isPR ? const VeltPill('record', success: true) : null,
+            ),
+            const SizedBox(height: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _FreshPRDetailScreen extends StatelessWidget {
+  const _FreshPRDetailScreen({
+    required this.exerciseName,
+    required this.data,
+  });
+
+  final String exerciseName;
+  final _PRHistory? data;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).extension<AppColors>()!;
+    final pr = data;
+
+    if (pr == null) {
+      return VeltScreen(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            VeltTopBar(
+              title: exerciseName,
+              subtitle: 'No PR data yet',
+              onBack: () => Navigator.pop(context),
+            ),
+            const SizedBox(height: 24),
+            const VeltPanel(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 30),
+                child: Center(child: VeltLabel('No PR data yet')),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return VeltScreen(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          VeltTopBar(
+            title: exerciseName,
+            subtitle: pr.achievedDate,
+            onBack: () => Navigator.pop(context),
+            trailing: const VeltPill('1RM PR', accent: true),
+          ),
+          const SizedBox(height: 14),
+          VeltPanel(
+            hero: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const VeltLabel('Personal record'),
+                const SizedBox(height: 10),
+                Text(
+                  WeightUnit.format(pr.currentWeight),
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontSize: 42,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${pr.currentReps} reps · +${WeightUnit.format(pr.gainedKg)} gained',
+                  style: TextStyle(
+                    color: c.textSecondary,
+                    fontSize: 13,
+                    height: 1.35,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (pr.progression.length >= 2) ...[
+            const VeltSection(label: 'All-time progression'),
+            const VeltLineChart(height: 126),
+          ],
+          const VeltSection(label: 'Attempts'),
+          for (final attempt in pr.attempts) ...[
+            VeltRowCard(
+              icon: attempt.isCurrent ? 'PR' : 'A',
+              title: attempt.date,
+              subtitle: attempt.value,
+              trailing: attempt.isCurrent
+                  ? const VeltPill('current', success: true)
+                  : null,
+            ),
+            const SizedBox(height: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
 
 class _DetailHeader extends StatelessWidget {
   const _DetailHeader({
@@ -257,12 +526,12 @@ class _DetailHeader extends StatelessWidget {
     final c = Theme.of(context).extension<AppColors>()!;
     return Container(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.screenH, AppSpacing.sm,
-        AppSpacing.screenH, AppSpacing.md),
+          AppSpacing.screenH, AppSpacing.sm, AppSpacing.screenH, AppSpacing.md),
       decoration: BoxDecoration(
         color: c.surface,
         border: Border(
-          bottom: BorderSide(color: c.divider.withValues(alpha: 0.6), width: 0.5)),
+            bottom: BorderSide(
+                color: c.divider.withValues(alpha: 0.6), width: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,7 +546,7 @@ class _DetailHeader extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.arrow_back_ios_new_rounded,
-                        size: 16, color: c.textSecondary),
+                          size: 16, color: c.textSecondary),
                     ],
                   ),
                 ),
@@ -301,15 +570,16 @@ class _DetailHeader extends StatelessWidget {
             ),
           Text(
             title,
-            style: AppTypography.displayL(c.textPrimary).copyWith(
-              fontSize: 26, letterSpacing: -0.8, height: 1.1),
+            style: AppTypography.displayL(c.textPrimary)
+                .copyWith(fontSize: 26, letterSpacing: -0.8, height: 1.1),
           ),
           if (subtitle != null)
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 subtitle!,
-                style: AppTypography.bodyS(c.textTertiary).copyWith(fontSize: 12),
+                style:
+                    AppTypography.bodyS(c.textTertiary).copyWith(fontSize: 12),
               ),
             ),
         ],
@@ -347,30 +617,32 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => StatefulBuilder(
         builder: (ctx, setSheet) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
           child: Container(
             decoration: BoxDecoration(
               color: c.surfaceElevated,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(20)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
             ),
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(child: Container(
-                  width: 36, height: 4,
+                Center(
+                    child: Container(
+                  width: 36,
+                  height: 4,
                   decoration: BoxDecoration(
-                    color: c.divider,
-                    borderRadius: BorderRadius.circular(2)),
+                      color: c.divider, borderRadius: BorderRadius.circular(2)),
                 )),
                 const SizedBox(height: 16),
                 Text('FORM NOTES',
-                  style: AppTypography.caption(c.accentIron).copyWith(
-                    fontSize: 10, fontWeight: FontWeight.w700,
-                    letterSpacing: 0.9)),
+                    style: AppTypography.caption(c.accentIron).copyWith(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.9)),
                 const SizedBox(height: 12),
                 TextField(
                   controller: ctrl,
@@ -388,8 +660,8 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
-                      borderSide: BorderSide(
-                        color: c.divider.withValues(alpha: 0.6)),
+                      borderSide:
+                          BorderSide(color: c.divider.withValues(alpha: 0.6)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -409,7 +681,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                       await PrefsService.clearNote('ex_${widget.exerciseName}');
                     } else {
                       await PrefsService.setNote(
-                        'ex_${widget.exerciseName}', text);
+                          'ex_${widget.exerciseName}', text);
                     }
                     setState(() => _note = text);
                     if (mounted) Navigator.pop(context);
@@ -425,8 +697,15 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final c    = Theme.of(context).extension<AppColors>()!;
+    final c = Theme.of(context).extension<AppColors>()!;
     final data = _ExerciseStats.compute(widget.exerciseName);
+
+    return _FreshExerciseDetailScreen(
+      exerciseName: widget.exerciseName,
+      data: data,
+      note: _note,
+      onEditNote: () => _editNote(c),
+    );
 
     return Scaffold(
       backgroundColor: c.surface,
@@ -445,15 +724,14 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
               Expanded(
                 child: Center(
                   child: Text('No data yet',
-                    style: AppTypography.bodyM(c.textTertiary)),
+                      style: AppTypography.bodyM(c.textTertiary)),
                 ),
               )
             else
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.screenH, AppSpacing.lg,
-                    AppSpacing.screenH, 80),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.screenH,
+                      AppSpacing.lg, AppSpacing.screenH, 80),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -461,19 +739,22 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                       const SizedBox(height: 12),
 
                       Row(children: [
-                        Expanded(child: _StatTile(
+                        Expanded(
+                            child: _StatTile(
                           label: 'Volume',
                           value: WeightUnit.formatVolume(data.totalVolume),
                           c: c,
                         )),
                         const SizedBox(width: 8),
-                        Expanded(child: _StatTile(
+                        Expanded(
+                            child: _StatTile(
                           label: 'Sessions',
                           value: '${data.sessionCount}',
                           c: c,
                         )),
                         const SizedBox(width: 8),
-                        Expanded(child: _StatTile(
+                        Expanded(
+                            child: _StatTile(
                           label: 'PRs',
                           value: '${data.prCount}',
                           c: c,
@@ -491,10 +772,10 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                             color: c.surfaceElevated,
                             borderRadius: BorderRadius.circular(AppRadius.md),
                             border: Border.all(
-                              color: c.divider.withValues(alpha: 0.5)),
+                                color: c.divider.withValues(alpha: 0.5)),
                           ),
-                          child: _ProgressionChart(
-                            data: data.progression, c: c),
+                          child:
+                              _ProgressionChart(data: data.progression, c: c),
                         ),
                       ],
 
@@ -506,54 +787,68 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                           color: c.surfaceElevated,
                           borderRadius: BorderRadius.circular(AppRadius.md),
                           border: Border.all(
-                            color: c.divider.withValues(alpha: 0.5)),
+                              color: c.divider.withValues(alpha: 0.5)),
                         ),
                         child: Column(
-                          children: data.recentSessions.asMap().entries.map((e) {
+                          children:
+                              data.recentSessions.asMap().entries.map((e) {
                             final i = e.key;
                             final s = e.value;
                             return Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 12),
+                                  horizontal: 14, vertical: 12),
                               decoration: BoxDecoration(
                                 color: s.isPR
                                     ? c.accentIron.withValues(alpha: 0.04)
                                     : Colors.transparent,
                                 border: i < data.recentSessions.length - 1
-                                    ? Border(bottom: BorderSide(
-                                        color: c.divider.withValues(alpha: 0.5),
-                                        width: 0.5))
+                                    ? Border(
+                                        bottom: BorderSide(
+                                            color: c.divider
+                                                .withValues(alpha: 0.5),
+                                            width: 0.5))
                                     : null,
                               ),
                               child: Row(children: [
-                                Expanded(child: Column(
+                                Expanded(
+                                    child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(s.date,
-                                      style: AppTypography.bodyS(c.textPrimary)
-                                          .copyWith(fontSize: 12,
-                                            fontWeight: FontWeight.w700)),
+                                        style:
+                                            AppTypography.bodyS(c.textPrimary)
+                                                .copyWith(
+                                                    fontSize: 12,
+                                                    fontWeight:
+                                                        FontWeight.w700)),
                                     const SizedBox(height: 2),
                                     Text(s.sets,
-                                      style: AppTypography.bodyS(c.textSecondary)
-                                          .copyWith(fontSize: 11,
-                                            fontFeatures: [
-                                              const FontFeature.tabularFigures()])),
+                                        style:
+                                            AppTypography.bodyS(c.textSecondary)
+                                                .copyWith(
+                                                    fontSize: 11,
+                                                    fontFeatures: [
+                                              const FontFeature.tabularFigures()
+                                            ])),
                                   ],
                                 )),
                                 if (s.isPR)
                                   Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 7, vertical: 3),
+                                        horizontal: 7, vertical: 3),
                                     decoration: BoxDecoration(
-                                      color: c.accentIron.withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(
-                                        AppRadius.full),
+                                      color:
+                                          c.accentIron.withValues(alpha: 0.15),
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.full),
                                     ),
                                     child: Text('PR',
-                                      style: AppTypography.caption(c.accentIron)
-                                          .copyWith(fontSize: 9,
-                                            fontWeight: FontWeight.w700)),
+                                        style:
+                                            AppTypography.caption(c.accentIron)
+                                                .copyWith(
+                                                    fontSize: 9,
+                                                    fontWeight:
+                                                        FontWeight.w700)),
                                   ),
                               ]),
                             );
@@ -564,13 +859,13 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                       // Form notes section
                       const SizedBox(height: 24),
                       Row(children: [
-                        const Expanded(child: _SectionLabel(label: 'FORM NOTES')),
+                        const Expanded(
+                            child: _SectionLabel(label: 'FORM NOTES')),
                         GestureDetector(
                           onTap: () => _editNote(c),
-                          child: Text(
-                            _note.isEmpty ? 'Add' : 'Edit',
-                            style: AppTypography.bodyS(c.accentIron).copyWith(
-                              fontSize: 12, fontWeight: FontWeight.w600)),
+                          child: Text(_note.isEmpty ? 'Add' : 'Edit',
+                              style: AppTypography.bodyS(c.accentIron).copyWith(
+                                  fontSize: 12, fontWeight: FontWeight.w600)),
                         ),
                       ]),
                       const SizedBox(height: 8),
@@ -582,7 +877,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                             color: c.accentIron.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(AppRadius.md),
                             border: Border.all(
-                              color: c.accentIron.withValues(alpha: 0.25)),
+                                color: c.accentIron.withValues(alpha: 0.25)),
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(AppRadius.md),
@@ -628,8 +923,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                                                       .copyWith(
                                                           fontSize: 13,
                                                           height: 1.5))
-                                              : Text(
-                                                  _note,
+                                              : Text(_note,
                                                   style: AppTypography.bodyS(
                                                           c.textSecondary)
                                                       .copyWith(
@@ -679,30 +973,32 @@ class _BestSetCard extends StatelessWidget {
                 Text(
                   'BEST SET (CURRENT)',
                   style: AppTypography.caption(c.accentIron).copyWith(
-                    fontWeight: FontWeight.w700, fontSize: 10,
-                    letterSpacing: 0.9),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 10,
+                      letterSpacing: 0.9),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   data.topSet,
                   style: AppTypography.displayL(c.textPrimary).copyWith(
-                    fontSize: 26, letterSpacing: -0.8,
-                    fontFeatures: [const FontFeature.tabularFigures()],
-                    height: 1),
+                      fontSize: 26,
+                      letterSpacing: -0.8,
+                      fontFeatures: [const FontFeature.tabularFigures()],
+                      height: 1),
                 ),
                 if (data.thirtyDayBest != null) ...[
                   const SizedBox(height: 8),
                   Text(
                     '↑ +${(data.progression.last.weight - data.thirtyDayBest!).toStringAsFixed(1)} ${WeightUnit.suffix} vs 30 days ago',
-                    style: AppTypography.bodyS(c.successLime).copyWith(
-                      fontSize: 12, fontWeight: FontWeight.w600),
+                    style: AppTypography.bodyS(c.successLime)
+                        .copyWith(fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                 ] else if (data.progression.length >= 2) ...[
                   const SizedBox(height: 8),
                   Text(
                     '↑ +${(data.progression.last.weight - data.progression.first.weight).toStringAsFixed(1)} ${WeightUnit.suffix} total gain',
-                    style: AppTypography.bodyS(c.successLime).copyWith(
-                      fontSize: 12, fontWeight: FontWeight.w600),
+                    style: AppTypography.bodyS(c.successLime)
+                        .copyWith(fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                 ],
               ],
@@ -713,24 +1009,24 @@ class _BestSetCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 52, height: 52,
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: c.accentIron.withValues(alpha: 0.15),
                 ),
                 child: Icon(Icons.emoji_events_rounded,
-                  color: c.accentIron, size: 24),
+                    color: c.accentIron, size: 24),
               ),
               if (data.estimated1RM != null) ...[
                 const SizedBox(height: 10),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: c.surfaceHigh,
                     borderRadius: BorderRadius.circular(AppRadius.sm),
-                    border: Border.all(
-                      color: c.divider.withValues(alpha: 0.7)),
+                    border: Border.all(color: c.divider.withValues(alpha: 0.7)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -738,17 +1034,18 @@ class _BestSetCard extends StatelessWidget {
                       Text(
                         'EST. 1RM',
                         style: AppTypography.caption(c.textTertiary).copyWith(
-                          fontSize: 9, fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         WeightUnit.format(data.estimated1RM!),
                         style: AppTypography.displayM(c.textPrimary).copyWith(
-                          fontSize: 15, letterSpacing: -0.4,
-                          fontWeight: FontWeight.w700,
-                          fontFeatures: [
-                            const FontFeature.tabularFigures()]),
+                            fontSize: 15,
+                            letterSpacing: -0.4,
+                            fontWeight: FontWeight.w700,
+                            fontFeatures: [const FontFeature.tabularFigures()]),
                       ),
                     ],
                   ),
@@ -791,30 +1088,32 @@ class _PRDetailScreenState extends State<PRDetailScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => StatefulBuilder(
         builder: (ctx, _) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
           child: Container(
             decoration: BoxDecoration(
               color: c.surfaceElevated,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(20)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
             ),
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(child: Container(
-                  width: 36, height: 4,
+                Center(
+                    child: Container(
+                  width: 36,
+                  height: 4,
                   decoration: BoxDecoration(
-                    color: c.divider,
-                    borderRadius: BorderRadius.circular(2)),
+                      color: c.divider, borderRadius: BorderRadius.circular(2)),
                 )),
                 const SizedBox(height: 16),
                 Text('PR NOTE',
-                  style: AppTypography.caption(c.accentIron).copyWith(
-                    fontSize: 10, fontWeight: FontWeight.w700,
-                    letterSpacing: 0.9)),
+                    style: AppTypography.caption(c.accentIron).copyWith(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.9)),
                 const SizedBox(height: 12),
                 TextField(
                   controller: ctrl,
@@ -832,8 +1131,8 @@ class _PRDetailScreenState extends State<PRDetailScreen> {
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
-                      borderSide: BorderSide(
-                        color: c.divider.withValues(alpha: 0.6)),
+                      borderSide:
+                          BorderSide(color: c.divider.withValues(alpha: 0.6)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -853,7 +1152,7 @@ class _PRDetailScreenState extends State<PRDetailScreen> {
                       await PrefsService.clearNote('pr_${widget.exerciseName}');
                     } else {
                       await PrefsService.setNote(
-                        'pr_${widget.exerciseName}', text);
+                          'pr_${widget.exerciseName}', text);
                     }
                     setState(() => _note = text);
                     if (mounted) Navigator.pop(context);
@@ -869,8 +1168,13 @@ class _PRDetailScreenState extends State<PRDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final c    = Theme.of(context).extension<AppColors>()!;
+    final c = Theme.of(context).extension<AppColors>()!;
     final data = _PRHistory.compute(widget.exerciseName);
+
+    return _FreshPRDetailScreen(
+      exerciseName: widget.exerciseName,
+      data: data,
+    );
 
     return Scaffold(
       backgroundColor: c.surface,
@@ -893,15 +1197,14 @@ class _PRDetailScreenState extends State<PRDetailScreen> {
               Expanded(
                 child: Center(
                   child: Text('No PR data yet',
-                    style: AppTypography.bodyM(c.textTertiary)),
+                      style: AppTypography.bodyM(c.textTertiary)),
                 ),
               )
             else
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.screenH, AppSpacing.lg,
-                    AppSpacing.screenH, 80),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.screenH,
+                      AppSpacing.lg, AppSpacing.screenH, 80),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -919,7 +1222,7 @@ class _PRDetailScreenState extends State<PRDetailScreen> {
                             color: c.surfaceElevated,
                             borderRadius: BorderRadius.circular(AppRadius.md),
                             border: Border.all(
-                              color: c.divider.withValues(alpha: 0.5)),
+                                color: c.divider.withValues(alpha: 0.5)),
                           ),
                           child: _BigProgressionChart(
                             data: data.progression,
@@ -937,20 +1240,22 @@ class _PRDetailScreenState extends State<PRDetailScreen> {
                           color: c.surfaceElevated,
                           borderRadius: BorderRadius.circular(AppRadius.md),
                           border: Border.all(
-                            color: c.divider.withValues(alpha: 0.5)),
+                              color: c.divider.withValues(alpha: 0.5)),
                         ),
                         child: Column(
                           children: data.attempts.asMap().entries.map((e) {
-                            final i     = e.key;
-                            final a     = e.value;
+                            final i = e.key;
+                            final a = e.value;
                             return Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 12),
+                                  horizontal: 14, vertical: 12),
                               decoration: BoxDecoration(
                                 border: i < data.attempts.length - 1
-                                    ? Border(bottom: BorderSide(
-                                        color: c.divider.withValues(alpha: 0.4),
-                                        width: 0.5))
+                                    ? Border(
+                                        bottom: BorderSide(
+                                            color: c.divider
+                                                .withValues(alpha: 0.4),
+                                            width: 0.5))
                                     : null,
                               ),
                               child: Row(
@@ -963,7 +1268,8 @@ class _PRDetailScreenState extends State<PRDetailScreen> {
                                       children: [
                                         if (i < data.attempts.length - 1)
                                           Positioned(
-                                            top: 14, bottom: -12,
+                                            top: 14,
+                                            bottom: -12,
                                             child: Container(
                                               width: 1,
                                               color: c.divider,
@@ -983,11 +1289,14 @@ class _PRDetailScreenState extends State<PRDetailScreen> {
                                                 : Border.all(
                                                     color: c.divider, width: 1),
                                             boxShadow: a.isCurrent
-                                                ? [BoxShadow(
-                                                    color: c.accentIron
-                                                        .withValues(alpha: 0.3),
-                                                    blurRadius: 0,
-                                                    spreadRadius: 3)]
+                                                ? [
+                                                    BoxShadow(
+                                                        color: c.accentIron
+                                                            .withValues(
+                                                                alpha: 0.3),
+                                                        blurRadius: 0,
+                                                        spreadRadius: 3)
+                                                  ]
                                                 : null,
                                           ),
                                         ),
@@ -997,27 +1306,31 @@ class _PRDetailScreenState extends State<PRDetailScreen> {
                                   const SizedBox(width: AppSpacing.sm),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           a.date,
-                                          style: AppTypography.bodyS(
-                                            a.isCurrent
-                                                ? c.accentIron
-                                                : c.textPrimary).copyWith(
-                                              fontSize: 13,
-                                              fontWeight: a.isCurrent
-                                                  ? FontWeight.w700
-                                                  : FontWeight.w500),
+                                          style: AppTypography.bodyS(a.isCurrent
+                                                  ? c.accentIron
+                                                  : c.textPrimary)
+                                              .copyWith(
+                                                  fontSize: 13,
+                                                  fontWeight: a.isCurrent
+                                                      ? FontWeight.w700
+                                                      : FontWeight.w500),
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
                                           a.value,
                                           style: AppTypography.bodyS(
-                                            c.textSecondary).copyWith(
-                                              fontSize: 11,
-                                              fontFeatures: [
-                                                const FontFeature.tabularFigures()]),
+                                                  c.textSecondary)
+                                              .copyWith(
+                                                  fontSize: 11,
+                                                  fontFeatures: [
+                                                const FontFeature
+                                                    .tabularFigures()
+                                              ]),
                                         ),
                                       ],
                                     ),
@@ -1025,28 +1338,35 @@ class _PRDetailScreenState extends State<PRDetailScreen> {
                                   if (a.isCurrent)
                                     Container(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 7, vertical: 3),
+                                          horizontal: 7, vertical: 3),
                                       decoration: BoxDecoration(
                                         color: c.accentIron,
-                                        borderRadius: BorderRadius.circular(AppRadius.full),
+                                        borderRadius: BorderRadius.circular(
+                                            AppRadius.full),
                                       ),
                                       child: Text('CURRENT',
-                                        style: AppTypography.caption(Colors.white)
-                                            .copyWith(fontSize: 9,
-                                              fontWeight: FontWeight.w800)),
+                                          style: AppTypography.caption(
+                                                  Colors.white)
+                                              .copyWith(
+                                                  fontSize: 9,
+                                                  fontWeight: FontWeight.w800)),
                                     )
                                   else
                                     Container(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 7, vertical: 3),
+                                          horizontal: 7, vertical: 3),
                                       decoration: BoxDecoration(
-                                        color: c.accentIron.withValues(alpha: 0.15),
-                                        borderRadius: BorderRadius.circular(AppRadius.full),
+                                        color: c.accentIron
+                                            .withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(
+                                            AppRadius.full),
                                       ),
                                       child: Text('PR',
-                                        style: AppTypography.caption(c.accentIron)
-                                            .copyWith(fontSize: 9,
-                                              fontWeight: FontWeight.w700)),
+                                          style: AppTypography.caption(
+                                                  c.accentIron)
+                                              .copyWith(
+                                                  fontSize: 9,
+                                                  fontWeight: FontWeight.w700)),
                                     ),
                                 ],
                               ),
@@ -1061,10 +1381,9 @@ class _PRDetailScreenState extends State<PRDetailScreen> {
                         const Expanded(child: _SectionLabel(label: 'PR NOTE')),
                         GestureDetector(
                           onTap: () => _editNote(c),
-                          child: Text(
-                            _note.isEmpty ? 'Add' : 'Edit',
-                            style: AppTypography.bodyS(c.accentIron).copyWith(
-                              fontSize: 12, fontWeight: FontWeight.w600)),
+                          child: Text(_note.isEmpty ? 'Add' : 'Edit',
+                              style: AppTypography.bodyS(c.accentIron).copyWith(
+                                  fontSize: 12, fontWeight: FontWeight.w600)),
                         ),
                       ]),
                       const SizedBox(height: 8),
@@ -1077,17 +1396,18 @@ class _PRDetailScreenState extends State<PRDetailScreen> {
                             color: c.surfaceElevated,
                             borderRadius: BorderRadius.circular(AppRadius.md),
                             border: Border.all(
-                              color: c.divider.withValues(alpha: 0.5)),
+                                color: c.divider.withValues(alpha: 0.5)),
                           ),
                           child: _note.isEmpty
-                              ? Text(
-                                  'Tap to record how this PR felt…',
+                              ? Text('Tap to record how this PR felt…',
                                   style: AppTypography.bodyS(c.textTertiary)
                                       .copyWith(fontSize: 13, height: 1.5))
                               : Text('"$_note"',
                                   style: AppTypography.bodyS(c.textSecondary)
-                                      .copyWith(fontSize: 13, height: 1.6,
-                                        fontStyle: FontStyle.italic)),
+                                      .copyWith(
+                                          fontSize: 13,
+                                          height: 1.6,
+                                          fontStyle: FontStyle.italic)),
                         ),
                       ),
                     ],
@@ -1125,13 +1445,14 @@ class _HeroPRCard extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 56, height: 56,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: c.accentIron.withValues(alpha: 0.18),
             ),
-            child: Icon(Icons.emoji_events_rounded,
-              color: c.accentIron, size: 26),
+            child:
+                Icon(Icons.emoji_events_rounded, color: c.accentIron, size: 26),
           ),
           const SizedBox(height: 14),
           Row(
@@ -1153,8 +1474,8 @@ class _HeroPRCard extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 WeightUnit.suffix,
-                style: AppTypography.titleM(c.textSecondary).copyWith(
-                  fontSize: 18, fontWeight: FontWeight.w500),
+                style: AppTypography.titleM(c.textSecondary)
+                    .copyWith(fontSize: 18, fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -1162,8 +1483,8 @@ class _HeroPRCard extends StatelessWidget {
           Text(
             '× ${data.currentReps} reps',
             style: AppTypography.bodyS(c.textTertiary).copyWith(
-              fontSize: 12,
-              fontFeatures: [const FontFeature.tabularFigures()]),
+                fontSize: 12,
+                fontFeatures: [const FontFeature.tabularFigures()]),
           ),
         ],
       ),
@@ -1192,9 +1513,8 @@ class _StatTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
-        color: accent
-            ? c.accentIron.withValues(alpha: 0.08)
-            : c.surfaceElevated,
+        color:
+            accent ? c.accentIron.withValues(alpha: 0.08) : c.surfaceElevated,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
           color: accent
@@ -1206,19 +1526,18 @@ class _StatTile extends StatelessWidget {
         children: [
           Text(
             value,
-            style: AppTypography.displayM(
-              accent ? c.accentIron : c.textPrimary).copyWith(
-                fontSize: 22,
-                letterSpacing: -0.5,
-                height: 1,
-                fontFeatures: [const FontFeature.tabularFigures()]),
+            style: AppTypography.displayM(accent ? c.accentIron : c.textPrimary)
+                .copyWith(
+                    fontSize: 22,
+                    letterSpacing: -0.5,
+                    height: 1,
+                    fontFeatures: [const FontFeature.tabularFigures()]),
           ),
           const SizedBox(height: 4),
           Text(
             label.toUpperCase(),
-            style: AppTypography.caption(
-              accent ? c.accentIron : c.textTertiary).copyWith(
-                fontSize: 8, letterSpacing: 0.7),
+            style: AppTypography.caption(accent ? c.accentIron : c.textTertiary)
+                .copyWith(fontSize: 8, letterSpacing: 0.7),
           ),
         ],
       ),
@@ -1236,7 +1555,7 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       label,
       style: AppTypography.caption(c.textTertiary).copyWith(
-        fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8),
+          fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8),
     );
   }
 }
@@ -1274,10 +1593,10 @@ class _ProgressionChartState extends State<_ProgressionChart> {
         LayoutBuilder(builder: (_, constraints) {
           final w = constraints.maxWidth;
           return GestureDetector(
-            onTapDown:   (d) => _onTouch(d.localPosition.dx, w),
+            onTapDown: (d) => _onTouch(d.localPosition.dx, w),
             onPanUpdate: (d) => _onTouch(d.localPosition.dx, w),
-            onPanEnd:    (_) => setState(() => _hoveredIndex = null),
-            onTapUp:     (_) => setState(() => _hoveredIndex = null),
+            onPanEnd: (_) => setState(() => _hoveredIndex = null),
+            onTapUp: (_) => setState(() => _hoveredIndex = null),
             child: Stack(
               children: [
                 CustomPaint(
@@ -1306,17 +1625,21 @@ class _ProgressionChartState extends State<_ProgressionChart> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: widget.data.asMap().entries.map((e) {
-            final isLast   = e.key == widget.data.length - 1;
+            final isLast = e.key == widget.data.length - 1;
             final isHovered = e.key == _hoveredIndex;
             return Text(
               e.value.label,
               style: AppTypography.caption(
-                isHovered ? c.accentIron
-                    : isLast ? c.accentIron : c.textTertiary,
+                isHovered
+                    ? c.accentIron
+                    : isLast
+                        ? c.accentIron
+                        : c.textTertiary,
               ).copyWith(
-                fontSize: 9,
-                fontWeight: (isLast || isHovered)
-                    ? FontWeight.w700 : FontWeight.w500),
+                  fontSize: 9,
+                  fontWeight: (isLast || isHovered)
+                      ? FontWeight.w700
+                      : FontWeight.w500),
             );
           }).toList(),
         ),
@@ -1359,10 +1682,10 @@ class _BigProgressionChartState extends State<_BigProgressionChart> {
         LayoutBuilder(builder: (_, constraints) {
           final w = constraints.maxWidth;
           return GestureDetector(
-            onTapDown:   (d) => _onTouch(d.localPosition.dx, w),
+            onTapDown: (d) => _onTouch(d.localPosition.dx, w),
             onPanUpdate: (d) => _onTouch(d.localPosition.dx, w),
-            onPanEnd:    (_) => setState(() => _hoveredIndex = null),
-            onTapUp:     (_) => setState(() => _hoveredIndex = null),
+            onPanEnd: (_) => setState(() => _hoveredIndex = null),
+            onTapUp: (_) => setState(() => _hoveredIndex = null),
             child: Stack(
               children: [
                 CustomPaint(
@@ -1393,8 +1716,7 @@ class _BigProgressionChartState extends State<_BigProgressionChart> {
           margin: const EdgeInsets.only(top: 10),
           padding: const EdgeInsets.only(top: 10),
           decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(color: c.divider, width: 0.5))),
+              border: Border(top: BorderSide(color: c.divider, width: 0.5))),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1405,7 +1727,8 @@ class _BigProgressionChartState extends State<_BigProgressionChart> {
               ),
               _ChartStat(
                 label: 'Gained',
-                value: '+${widget.gainedKg.toStringAsFixed(1)} ${WeightUnit.suffix}',
+                value:
+                    '+${widget.gainedKg.toStringAsFixed(1)} ${WeightUnit.suffix}',
                 color: c.successLime,
               ),
               _ChartStat(
@@ -1438,20 +1761,21 @@ class _ChartStat extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = Theme.of(context).extension<AppColors>()!;
     return Column(
-      crossAxisAlignment: alignEnd
-          ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment:
+          alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
         Text(
           label.toUpperCase(),
           style: AppTypography.caption(c.textTertiary).copyWith(
-            fontSize: 9, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+              fontSize: 9, fontWeight: FontWeight.w600, letterSpacing: 0.5),
         ),
         const SizedBox(height: 2),
         Text(
           value,
           style: AppTypography.bodyS(color).copyWith(
-            fontSize: 13, fontWeight: FontWeight.w700,
-            fontFeatures: [const FontFeature.tabularFigures()]),
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              fontFeatures: [const FontFeature.tabularFigures()]),
         ),
       ],
     );
@@ -1483,11 +1807,11 @@ class _ChartTooltip extends StatelessWidget {
 
     // Compute x position of the touched point
     final xFraction = data.length > 1 ? index / (data.length - 1) : 0.5;
-    final xPos      = xFraction * chartWidth;
+    final xPos = xFraction * chartWidth;
 
     // Tooltip width
-    const tipW   = 76.0;
-    const tipH   = 40.0;
+    const tipW = 76.0;
+    const tipH = 40.0;
     const margin = 6.0;
 
     double left = xPos - tipW / 2;
@@ -1503,11 +1827,12 @@ class _ChartTooltip extends StatelessWidget {
           color: c.surfaceElevated,
           borderRadius: BorderRadius.circular(AppRadius.sm),
           border: Border.all(
-            color: c.accentIron.withValues(alpha: 0.4), width: 0.5),
+              color: c.accentIron.withValues(alpha: 0.4), width: 0.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 8, offset: const Offset(0, 2)),
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2)),
           ],
         ),
         child: Column(
@@ -1516,14 +1841,15 @@ class _ChartTooltip extends StatelessWidget {
             Text(
               WeightUnit.format(item.weight),
               style: AppTypography.bodyS(c.accentIron).copyWith(
-                fontSize: 12, fontWeight: FontWeight.w800,
-                letterSpacing: -0.3,
-                fontFeatures: [const FontFeature.tabularFigures()]),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
+                  fontFeatures: [const FontFeature.tabularFigures()]),
             ),
             Text(
               item.label,
-              style: AppTypography.caption(c.textTertiary).copyWith(
-                fontSize: 9),
+              style:
+                  AppTypography.caption(c.textTertiary).copyWith(fontSize: 9),
             ),
           ],
         ),
@@ -1562,18 +1888,22 @@ class _LinePainter extends CustomPainter {
     final minY = data.reduce(math.min);
     final maxY = data.reduce(math.max);
     final range = (maxY - minY).clamp(1.0, double.infinity);
-    final pad   = range * 0.15;
-    final lo    = minY - pad;
-    final hi    = maxY + pad;
+    final pad = range * 0.15;
+    final lo = minY - pad;
+    final hi = maxY + pad;
 
-    List<Offset> pts = List.generate(data.length, (i) => Offset(
-      (i / (data.length - 1)) * size.width,
-      size.height - ((data[i] - lo) / (hi - lo)) * size.height,
-    ));
+    List<Offset> pts = List.generate(
+        data.length,
+        (i) => Offset(
+              (i / (data.length - 1)) * size.width,
+              size.height - ((data[i] - lo) / (hi - lo)) * size.height,
+            ));
 
     // Fill area
     final fillPath = Path()..moveTo(pts.first.dx, pts.first.dy);
-    for (final p in pts.skip(1)) { fillPath.lineTo(p.dx, p.dy); }
+    for (final p in pts.skip(1)) {
+      fillPath.lineTo(p.dx, p.dy);
+    }
     fillPath
       ..lineTo(size.width, size.height)
       ..lineTo(0, size.height)
@@ -1594,7 +1924,9 @@ class _LinePainter extends CustomPainter {
 
     // Line
     final linePath = Path()..moveTo(pts.first.dx, pts.first.dy);
-    for (final p in pts.skip(1)) { linePath.lineTo(p.dx, p.dy); }
+    for (final p in pts.skip(1)) {
+      linePath.lineTo(p.dx, p.dy);
+    }
     canvas.drawPath(
       linePath,
       Paint()
@@ -1608,7 +1940,7 @@ class _LinePainter extends CustomPainter {
     // Dots
     for (int i = 0; i < pts.length; i++) {
       final p = pts[i];
-      final isLast    = i == pts.length - 1;
+      final isLast = i == pts.length - 1;
       final isTouched = i == highlightIndex;
       if (isTouched) {
         canvas.drawCircle(p, 7, Paint()..color = color.withAlpha(40));
@@ -1622,10 +1954,12 @@ class _LinePainter extends CustomPainter {
       } else {
         canvas.drawCircle(p, 2.5, Paint()..color = bgColor);
         canvas.drawCircle(
-          p, 2, Paint()
-            ..color = color
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.5);
+            p,
+            2,
+            Paint()
+              ..color = color
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 1.5);
       }
     }
   }

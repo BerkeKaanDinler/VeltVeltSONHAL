@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VELT Themed Screens</title>
+  <style>
+    :root {
+      --ink: #0f0f0f;
+      --surface: #0f0f0f;
+      --elevated: #1a1a1a;
+      --high: #242424;
+      --divider: #2a2a2a;
+      --text: #ffffff;
+      --text2: #a0a0a0;
+      --text3: #6b6b6b;
+      --accent: #d97706;
+      --accentSoft: #92400e;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --protein: #d97706;
+      --carbs: #38bdf8;
+      --fat: #22c55e;
+      --ctaText: #ffffff;
+      --shadow: rgba(0,0,0,.28);
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      width: 390px;
+      height: 844px;
+      margin: 0;
+      overflow: hidden;
+      background: var(--surface);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    body.board {
+      width: auto;
+      height: auto;
+      min-height: 100vh;
+      padding: 28px;
+      overflow: auto;
+      background: #080908;
+    }
+
+    html.board-html,
+    html.board-html body {
+      width: auto;
+      height: auto;
+      min-width: 2074px;
+    }
+
+    .board-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 390px);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .label-out {
+      margin: 0 0 8px;
+      color: #e8eee6;
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .theme-iron {
+      --ink: #0f0f0f; --surface: #0f0f0f; --elevated: #1a1a1a; --high: #242424; --divider: #2a2a2a;
+      --text: #ffffff; --text2: #a0a0a0; --text3: #6b6b6b; --accent: #d97706; --accentSoft: #92400e;
+      --success: #22c55e; --warning: #f59e0b; --error: #ef4444; --ctaText: #ffffff; --shadow: rgba(0,0,0,.30);
+    }
+
+    .theme-slate {
+      --ink: #0a0e1a; --surface: #0a0e1a; --elevated: #141927; --high: #1e2434; --divider: #252b3d;
+      --text: #f1f5f9; --text2: #94a3b8; --text3: #64748b; --accent: #94a3b8; --accentSoft: #475569;
+      --success: #22c55e; --warning: #f59e0b; --error: #ef4444; --ctaText: #0a0e1a; --shadow: rgba(0,0,0,.30);
+    }
+
+    .theme-rose {
+      --ink: #100a0e; --surface: #100a0e; --elevated: #1b131a; --high: #241b22; --divider: #2d2128;
+      --text: #fbeef2; --text2: #b89ba8; --text3: #896678; --accent: #f472b6; --accentSoft: #9d174d;
+      --success: #22c55e; --warning: #f59e0b; --error: #ef4444; --ctaText: #100a0e; --shadow: rgba(0,0,0,.32);
+    }
+
+    .theme-warm {
+      --ink: #f2ead9; --surface: #f2ead9; --elevated: #fbf6ed; --high: #eae1d0; --divider: #d8cebc;
+      --text: #1c1309; --text2: #5c4a38; --text3: #8a7865; --accent: #c55f18; --accentSoft: #e6a668;
+      --success: #5a8740; --warning: #c97a22; --error: #c03c3c; --protein: #a85820; --carbs: #4a7ea0;
+      --fat: #4e7040; --ctaText: #ffffff; --shadow: rgba(77,55,32,.13);
+    }
+
+    .theme-emerald {
+      --ink: #0a1410; --surface: #0a1410; --elevated: #0f1f18; --high: #162b22; --divider: #1f352a;
+      --text: #e8f5ee; --text2: #7bab94; --text3: #527a68; --accent: #10b981; --accentSoft: #065f46;
+      --success: #84cc16; --warning: #f59e0b; --error: #ef4444; --ctaText: #06110d; --shadow: rgba(0,0,0,.30);
+    }
+
+    .phone {
+      width: 390px;
+      height: 844px;
+      overflow: hidden;
+      position: relative;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,0) 190px),
+        var(--surface);
+      color: var(--text);
+    }
+
+    .phone:before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,.026) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+      background-size: 24px 24px;
+      opacity: .55;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,.68), transparent 45%);
+    }
+
+    .theme-warm .phone:before {
+      background-image:
+        linear-gradient(rgba(28,19,9,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(28,19,9,.032) 1px, transparent 1px);
+      opacity: .7;
+    }
+
+    .status {
+      position: relative;
+      z-index: 2;
+      height: 44px;
+      padding: 12px 22px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .sys { display: flex; align-items: center; gap: 7px; font-size: 12px; }
+    .bars { height: 12px; display: flex; align-items: end; gap: 2px; }
+    .bars i { width: 3px; border-radius: 2px; background: var(--text); }
+    .bars i:nth-child(1) { height: 4px; opacity: .42; }
+    .bars i:nth-child(2) { height: 7px; opacity: .62; }
+    .bars i:nth-child(3) { height: 10px; opacity: .82; }
+    .bars i:nth-child(4) { height: 12px; }
+    .battery { width: 24px; height: 11px; border: 1.4px solid var(--text2); border-radius: 3px; position: relative; }
+    .battery:before { content: ""; position: absolute; right: -4px; top: 3px; width: 2px; height: 5px; border-radius: 2px; background: var(--text2); }
+    .battery:after { content: ""; position: absolute; left: 2px; top: 2px; bottom: 2px; width: 15px; border-radius: 2px; background: var(--success); }
+
+    main {
+      position: relative;
+      z-index: 2;
+      height: calc(100% - 44px - 72px);
+      padding: 8px 18px 16px;
+      overflow: hidden;
+    }
+
+    main.full { height: calc(100% - 44px); padding-bottom: 18px; }
+    main.with-top { height: calc(100% - 44px - 58px); }
+
+    .top {
+      position: relative;
+      z-index: 2;
+      height: 58px;
+      padding: 0 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .top .title { flex: 1; min-width: 0; }
+    .top h1 { font-size: 19px; line-height: 22px; }
+    .top p { margin: 3px 0 0; color: var(--text2); font-size: 11px; }
+
+    .back, .icon-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: var(--elevated);
+      color: var(--text);
+      border: 1px solid var(--divider);
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .eyebrow, .label {
+      margin: 0;
+      color: var(--text2);
+      font-size: 10px;
+      line-height: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { letter-spacing: 0; }
+    h1 {
+      margin: 0;
+      color: var(--text);
+      font-size: 31px;
+      line-height: 34px;
+      font-weight: 900;
+    }
+
+    h2 { margin: 0; color: var(--text); font-size: 18px; line-height: 22px; font-weight: 950; }
+    h3 { margin: 0; color: var(--text); font-size: 15px; line-height: 18px; font-weight: 900; }
+
+    .sub { margin: 5px 0 0; color: var(--text2); font-size: 12px; line-height: 17px; }
+    .tiny { margin: 0; color: var(--text3); font-size: 10px; font-weight: 900; text-transform: uppercase; }
+    .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+    .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .stack { display: grid; gap: 8px; }
+    .stack10 { display: grid; gap: 10px; }
+    .mt6 { margin-top: 6px; }
+    .mt8 { margin-top: 8px; }
+    .mt10 { margin-top: 10px; }
+    .mt12 { margin-top: 12px; }
+    .mt14 { margin-top: 14px; }
+
+    .pill {
+      height: 26px;
+      padding: 0 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: var(--high);
+      color: var(--text2);
+      border: 1px solid var(--divider);
+      font-size: 10px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .pill.accent { color: var(--accent); background: color-mix(in srgb, var(--accent) 13%, var(--elevated)); border-color: color-mix(in srgb, var(--accent) 34%, var(--divider)); }
+    .pill.success { color: var(--success); background: color-mix(in srgb, var(--success) 12%, var(--elevated)); border-color: color-mix(in srgb, var(--success) 32%, var(--divider)); }
+    .pill.error { color: var(--error); background: color-mix(in srgb, var(--error) 12%, var(--elevated)); border-color: color-mix(in srgb, var(--error) 32%, var(--divider)); }
+
+    .panel, .hero {
+      border-radius: 8px;
+      background: var(--elevated);
+      border: 1px solid var(--divider);
+      box-shadow: 0 15px 28px var(--shadow);
+    }
+
+    .panel { padding: 12px; }
+
+    .hero {
+      padding: 15px;
+      background:
+        linear-gradient(140deg, color-mix(in srgb, var(--accent) 11%, transparent), transparent 48%),
+        var(--elevated);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero:before {
+      content: "";
+      position: absolute;
+      right: -46px;
+      top: 22px;
+      width: 154px;
+      height: 154px;
+      border-radius: 50%;
+      border: 17px solid color-mix(in srgb, var(--accent) 13%, transparent);
+    }
+    .hero > * { position: relative; z-index: 1; }
+
+    .button {
+      height: 45px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: var(--accent);
+      color: var(--ctaText);
+      font-size: 13px;
+      font-weight: 950;
+      box-shadow: 0 14px 26px color-mix(in srgb, var(--accent) 19%, transparent);
+    }
+
+    .button.secondary {
+      background: var(--high);
+      color: var(--text);
+      border: 1px solid var(--divider);
+      box-shadow: none;
+    }
+
+    .button.error { background: var(--error); color: #fff; }
+
+    .section {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 14px 0 8px;
+    }
+    .section span:first-child { color: var(--text2); font-size: 10px; font-weight: 950; text-transform: uppercase; }
+
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+    .metric {
+      min-height: 55px;
+      padding: 9px;
+      border-radius: 8px;
+      background: var(--high);
+      border: 1px solid var(--divider);
+    }
+    .metric b { display: block; color: var(--text); font-size: 20px; line-height: 21px; font-weight: 950; font-variant-numeric: tabular-nums; }
+    .metric span { display: block; margin-top: 4px; color: var(--text3); font-size: 9px; font-weight: 900; text-transform: uppercase; }
+
+    .bar { height: 7px; border-radius: 999px; background: var(--high); overflow: hidden; }
+    .bar i { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+    .bar.success i { background: var(--success); }
+    .bar.protein i { background: var(--protein); }
+    .bar.carbs i { background: var(--carbs); }
+    .bar.fat i { background: var(--fat); }
+
+    .nav {
+      position: absolute;
+      z-index: 3;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 72px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      background: var(--surface);
+      border-top: 1px solid var(--divider);
+    }
+
+    .nav-item {
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 5px;
+      color: var(--text3);
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .nav-icon {
+      width: 25px;
+      height: 25px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: var(--high);
+      color: var(--text3);
+      font-size: 11px;
+      font-weight: 950;
+    }
+    .nav-item.active { color: var(--text); }
+    .nav-item.active .nav-icon { background: var(--accent); color: var(--ctaText); }
+
+    .segment {
+      height: 36px;
+      padding: 3px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+      border-radius: 8px;
+      background: var(--elevated);
+      border: 1px solid var(--divider);
+    }
+    .segment span { display: grid; place-items: center; border-radius: 6px; color: var(--text2); font-size: 11px; font-weight: 900; }
+    .segment .active { background: var(--accent); color: var(--ctaText); }
+
+    .row-card {
+      min-height: 64px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      background: var(--elevated);
+      border: 1px solid var(--divider);
+      display: grid;
+      grid-template-columns: 44px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      box-shadow: 0 10px 22px var(--shadow);
+    }
+    .row-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: color-mix(in srgb, var(--accent) 13%, var(--high));
+      color: var(--accent);
+      font-size: 14px;
+      font-weight: 950;
+    }
+
+    .chart {
+      height: 130px;
+      border-radius: 8px;
+      border: 1px solid var(--divider);
+      background:
+        repeating-linear-gradient(0deg, color-mix(in srgb, var(--text) 6%, transparent) 0 1px, transparent 1px 31px),
+        var(--elevated);
+      position: relative;
+      overflow: hidden;
+    }
+    .chart svg { position: absolute; inset: 15px 10px 18px; width: calc(100% - 20px); height: calc(100% - 33px); overflow: visible; }
+
+    .ring {
+      width: 142px;
+      height: 142px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at center, var(--elevated) 0 56%, transparent 57%),
+        conic-gradient(var(--accent) 0 72%, var(--high) 72% 100%);
+      color: var(--text);
+      font-size: 30px;
+      font-weight: 950;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .table { display: grid; gap: 6px; }
+    .thead, .trow {
+      display: grid;
+      grid-template-columns: 32px 1fr 67px 48px 28px;
+      gap: 6px;
+      align-items: center;
+      color: var(--text3);
+      font-size: 9px;
+      font-weight: 950;
+      text-transform: uppercase;
+    }
+    .trow {
+      min-height: 37px;
+      padding: 0 7px;
+      border-radius: 7px;
+      background: var(--high);
+      color: var(--text);
+      text-transform: none;
+      font-size: 12px;
+    }
+    .kbd {
+      height: 27px;
+      display: grid;
+      place-items: center;
+      border-radius: 7px;
+      background: color-mix(in srgb, var(--text) 5%, var(--high));
+      border: 1px solid var(--divider);
+      font-weight: 900;
+    }
+    .check {
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 7px;
+      background: color-mix(in srgb, var(--success) 15%, var(--high));
+      color: var(--success);
+      font-weight: 950;
+    }
+
+    .swatches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .swatch { height: 45px; border-radius: 8px; border: 1px solid var(--divider); background: var(--high); position: relative; }
+    .swatch:after { content: ""; position: absolute; right: 7px; bottom: 7px; width: 13px; height: 13px; border-radius: 50%; background: var(--accent); }
+    .swatch.active { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent); }
+
+    .mini-bars { height: 72px; display: flex; align-items: end; gap: 6px; }
+    .mini-bars i { flex: 1; border-radius: 4px 4px 0 0; background: var(--high); }
+    .mini-bars i.active { background: var(--accent); }
+
+    .large-title { font-size: 35px; line-height: 37px; font-weight: 950; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    const themes = {
+      iron: "Iron Dark",
+      slate: "Slate Mono",
+      rose: "Rose Gold",
+      warm: "Warm Paper",
+      emerald: "Emerald"
+    };
+
+    const screenNames = {
+      "00-onboarding": "Onboarding",
+      "03-program-detail": "Program Detail",
+      "04-routine-editor": "Routine Editor",
+      "05-active-workout": "Active Workout",
+      "06-workout-summary": "Workout Summary",
+      "07-nutrition": "Nutrition",
+      "08-progress": "Progress",
+      "09-workout-history": "Workout History",
+      "10-workout-detail": "Workout Detail",
+      "11-exercise-detail": "Exercise Detail",
+      "12-pr-detail": "PR Detail",
+      "13-profile": "Profile",
+      "14-pro": "VELT Pro"
+    };
+
+    const status = () => `
+      <div class="status">
+        <div>9:41</div>
+        <div class="sys"><span class="bars"><i></i><i></i><i></i><i></i></span><span>5G</span><span class="battery"></span></div>
+      </div>`;
+
+    const nav = (active) => `
+      <nav class="nav">
+        ${[
+          ["home","H","Home"],
+          ["train","T","Train"],
+          ["nutrition","N","Food"],
+          ["progress","P","Stats"],
+          ["profile","U","You"]
+        ].map(([key, icon, label]) => `<div class="nav-item ${key === active ? "active" : ""}"><div class="nav-icon">${icon}</div><span>${label}</span></div>`).join("")}
+      </nav>`;
+
+    const shell = (theme, active, body) => `<div class="phone theme-${theme}">${status()}<main>${body}</main>${nav(active)}</div>`;
+    const full = (theme, body) => `<div class="phone theme-${theme}">${status()}<main class="full">${body}</main></div>`;
+    const sub = (theme, title, subtitle, body, action = "...") => `
+      <div class="phone theme-${theme}">
+        ${status()}
+        <div class="top">
+          <div class="back">&lt;</div>
+          <div class="title"><h1>${title}</h1>${subtitle ? `<p>${subtitle}</p>` : ""}</div>
+          <div class="icon-btn">${action}</div>
+        </div>
+        <main class="full with-top">${body}</main>
+      </div>`;
+
+    const section = (label, right = "") => `<div class="section"><span>${label}</span>${right}</div>`;
+    const metric = (v, l) => `<div class="metric"><b>${v}</b><span>${l}</span></div>`;
+    const rowCard = (icon, title, sub, right = "") => `
+      <div class="row-card">
+        <div class="row-icon">${icon}</div>
+        <div><h3>${title}</h3><p class="sub">${sub}</p></div>
+        ${right}
+      </div>`;
+    const chart = (color = "var(--accent)") => `
+      <div class="chart">
+        <svg viewBox="0 0 300 95" preserveAspectRatio="none">
+          <path d="M0 70 C32 68 52 42 82 48 S132 84 166 52 S226 18 300 28" fill="none" stroke="${color}" stroke-width="5" stroke-linecap="round"/>
+          <path d="M0 70 C32 68 52 42 82 48 S132 84 166 52 S226 18 300 28 L300 96 L0 96 Z" fill="${color}" opacity=".10"/>
+        </svg>
+      </div>`;
+    const setRows = () => `
+      <div class="table">
+        <div class="thead"><span>Set</span><span>Last</span><span>Weight</span><span>Reps</span><span></span></div>
+        ${[
+          ["1", "92.5 x 8", "95 kg", "8", "✓"],
+          ["2", "92.5 x 7", "97.5", "6", ""],
+          ["3", "90 x 8", "95 kg", "8", ""]
+        ].map(r => `<div class="trow"><span>${r[0]}</span><span class="tiny">${r[1]}</span><span class="kbd">${r[2]}</span><span class="kbd">${r[3]}</span><span class="check">${r[4]}</span></div>`).join("")}
+      </div>`;
+
+    const templates = {
+      "00-onboarding": (theme) => full(theme, `
+        <div class="row">
+          <div class="pill accent" style="height:38px;border-radius:8px;font-size:15px">VELT</div>
+          <span class="pill">2 / 4</span>
+        </div>
+        <div class="bar mt14"><i style="width:50%"></i></div>
+        <section class="hero mt14" style="min-height:206px">
+          <p class="label">Personal setup</p>
+          <h1 class="large-title mt8">Build your plan around one goal.</h1>
+          <p class="sub">Your training day, nutrition targets and progress views adapt to this choice.</p>
+        </section>
+        <div class="stack10 mt12">
+          ${rowCard("M", "Build Muscle", "More volume and hypertrophy focus", `<span class="pill accent">Best fit</span>`)}
+          ${rowCard("S", "Strength", "Heavy compounds and PR tracking", `<span class="pill">5x5</span>`)}
+          ${rowCard("L", "Lose Fat", "Calorie control and muscle retention", `<span class="pill">Macros</span>`)}
+        </div>
+        <div class="panel mt12">
+          <div class="row"><div><p class="label">Selected</p><h2 class="mt6">Build Muscle</h2></div><span class="pill success">Ready</span></div>
+          <div class="button mt12">Continue</div>
+        </div>
+      `),
+
+      "03-program-detail": (theme) => sub(theme, "PPL 6 Day", "Intermediate bodybuilding", `
+        <section class="hero" style="min-height:218px">
+          <p class="label">Program blueprint</p>
+          <h1 class="large-title mt8">A clear weekly split with progression.</h1>
+          <div class="grid3 mt14">${metric("6", "Days")}${metric("12", "Weeks")}${metric("52", "Workouts")}</div>
+        </section>
+        ${section("Weekly Schedule")}
+        <div class="stack">
+          ${rowCard("1", "Mon · Push", "Bench strength plus chest volume", `<span class="pill accent">Day 1</span>`)}
+          ${rowCard("2", "Tue · Pull", "Rows, pulldowns and biceps", `<span class="pill">Day 2</span>`)}
+          ${rowCard("3", "Wed · Legs", "Squat pattern and posterior chain", `<span class="pill">Day 3</span>`)}
+        </div>
+        ${section("Included")}
+        <div class="panel">
+          <div class="row"><p class="sub">Exercise library</p><h3>42 moves</h3></div>
+          <div class="row mt10"><p class="sub">Progression</p><h3>Double progression</h3></div>
+          <div class="button mt12">Add to My Routines</div>
+        </div>
+      `, "+"),
+
+      "04-routine-editor": (theme) => sub(theme, "Edit Routine", "Push A", `
+        <div class="panel">
+          <p class="label">Routine name</p>
+          <div class="metric mt8" style="min-height:44px"><b style="font-size:17px">Push A</b></div>
+          <p class="label mt12">Color</p>
+          <div class="swatches mt8"><div class="swatch active"></div><div class="swatch"></div><div class="swatch"></div><div class="swatch"></div><div class="swatch"></div></div>
+        </div>
+        ${section("Exercises", `<span class="pill">7 total</span>`)}
+        <div class="stack">
+          ${rowCard("B", "Bench Press", "3 working sets · Chest", `<span class="pill">Edit</span>`)}
+          ${rowCard("I", "Incline DB Press", "3 sets · Chest", `<span class="pill">Edit</span>`)}
+          ${rowCard("T", "Tricep Pushdown", "3 sets · Triceps", `<span class="pill">Edit</span>`)}
+        </div>
+        <div class="button secondary mt12">Add Exercise</div>
+        <div class="button mt8">Save Routine</div>
+      `, "✓"),
+
+      "05-active-workout": (theme) => full(theme, `
+        <div class="row">
+          <div><h2>Push A</h2><p class="sub">00:41:28 elapsed</p></div>
+          <div class="icon-btn">...</div>
+        </div>
+        <div class="panel mt10" style="border-color:color-mix(in srgb,var(--accent) 40%,var(--divider));background:color-mix(in srgb,var(--accent) 10%,var(--elevated))">
+          <div class="row"><p class="label" style="color:var(--accent)">Rest Timer</p><span class="pill">+15s</span></div>
+          <div class="row mt8"><h1 class="num" style="color:var(--accent);font-size:33px">01:12</h1><span class="pill">Skip</span></div>
+        </div>
+        <div class="bar mt10"><i style="width:42%"></i></div>
+        <div class="hero mt12" style="min-height:272px">
+          <div class="row"><div><h2>Bench Press</h2><p class="sub">Chest · Barbell</p></div><span class="pill accent">Last 100 x 5</span></div>
+          <div class="mt12">${setRows()}</div>
+          <div class="button secondary mt10" style="height:38px">Add Set</div>
+        </div>
+        <div class="row mt10" style="justify-content:flex-start;overflow:hidden"><span class="pill accent">Bench</span><span class="pill">Incline DB</span><span class="pill success">OHP</span><span class="pill">Pushdown</span></div>
+        <div class="grid2 mt10">
+          <div class="panel"><p class="label">Up next</p><h3 class="mt6">Incline DB</h3><p class="sub">3 sets</p></div>
+          <div class="panel"><p class="label">Session</p><h3 class="mt6">12 / 28 sets</h3><p class="sub">43% done</p></div>
+        </div>
+        <div class="button mt12">Finish Workout</div>
+      `),
+
+      "06-workout-summary": (theme) => full(theme, `
+        <section class="hero" style="min-height:186px;text-align:center">
+          <p class="label" style="color:var(--success)">Workout complete</p>
+          <h1 class="large-title mt8">Push A</h1>
+          <p class="sub">May 20 · 1h 04m</p>
+        </section>
+        <div class="grid3 mt10">${metric("64", "Minutes")}${metric("6.2k", "Volume")}${metric("24", "Sets")}</div>
+        <div class="panel mt10">
+          <div class="row"><div><p class="label" style="color:var(--success)">New PR</p><h2 class="mt6">Bench Press · 102.5 kg</h2></div><span class="pill success">PR</span></div>
+        </div>
+        ${section("Exercise Breakdown")}
+        <div class="stack">
+          ${rowCard("B", "Bench Press", "3 sets · top 102.5 x 3", `<span class="pill success">PR</span>`)}
+          ${rowCard("I", "Incline DB Press", "3 sets · 32 kg x 8", `<span class="pill">Done</span>`)}
+          ${rowCard("O", "OHP", "3 sets · 50 kg x 6", `<span class="pill">Done</span>`)}
+        </div>
+        <div class="grid2 mt12"><div class="button secondary">Share</div><div class="button">Done</div></div>
+      `),
+
+      "07-nutrition": (theme) => shell(theme, "nutrition", `
+        <div class="header"><div><p class="eyebrow">Daily intake</p><h1>Nutrition</h1></div><div class="icon-btn">+</div></div>
+        <div class="panel row" style="gap:14px">
+          <div class="ring"><div style="text-align:center"><div class="num" style="font-size:29px;font-weight:950">1,842</div><p class="tiny">kcal</p></div></div>
+          <div style="flex:1" class="stack10">
+            <div><div class="row"><p class="tiny">Protein</p><h3>142 / 180g</h3></div><div class="bar protein mt6"><i style="width:79%"></i></div></div>
+            <div><div class="row"><p class="tiny">Carbs</p><h3>198 / 260g</h3></div><div class="bar carbs mt6"><i style="width:76%"></i></div></div>
+            <div><div class="row"><p class="tiny">Fat</p><h3>58 / 75g</h3></div><div class="bar fat mt6"><i style="width:77%"></i></div></div>
+          </div>
+        </div>
+        ${section("Today's Log", `<span class="pill success">618 left</span>`)}
+        <div class="stack">
+          ${rowCard("B", "Breakfast", "Greek yogurt, oats", `<span class="pill">520</span>`)}
+          ${rowCard("L", "Lunch", "Chicken bowl", `<span class="pill">760</span>`)}
+          ${rowCard("S", "Snack", "Protein shake", `<span class="pill">220</span>`)}
+        </div>
+        ${section("This Week")}
+        <div class="panel"><div class="mini-bars">${[58,76,64,84,71,92,68].map((h,i)=>`<i class="${i===5?'active':''}" style="height:${h}%"></i>`).join("")}</div><div class="row mt8 tiny"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div></div>
+      `),
+
+      "08-progress": (theme) => shell(theme, "progress", `
+        <div class="header"><div><p class="eyebrow">Training signal</p><h1>Progress</h1></div><span class="pill accent">30D</span></div>
+        <div class="grid3">${metric("48.2k", "Volume")}${metric("12", "Workouts")}${metric("7", "Streak")}</div>
+        ${section("Training Volume")}
+        ${chart()}
+        ${section("Personal Records", `<span class="pill success">5 new</span>`)}
+        <div class="stack">
+          ${rowCard("B", "Bench Press", "102.5 kg · +2.5 kg", `<span class="pill success">1RM</span>`)}
+          ${rowCard("S", "Squat", "145 kg · stable", `<span class="pill">Top set</span>`)}
+        </div>
+        ${section("Muscle Balance")}
+        <div class="panel stack10">
+          <div><div class="row"><p class="sub">Chest</p><h3>28%</h3></div><div class="bar mt6"><i style="width:68%"></i></div></div>
+          <div><div class="row"><p class="sub">Back</p><h3>31%</h3></div><div class="bar mt6"><i style="width:74%"></i></div></div>
+          <div><div class="row"><p class="sub">Legs</p><h3>41%</h3></div><div class="bar mt6"><i style="width:82%"></i></div></div>
+        </div>
+      `),
+
+      "09-workout-history": (theme) => sub(theme, "History", "Completed workouts", `
+        <div class="grid3">${metric("84", "Total")}${metric("7", "Streak")}${metric("412k", "Volume")}</div>
+        ${section("This Week")}
+        <div class="stack">
+          ${rowCard("P", "Push A", "Today · 64 min · 6,240 kg", `<span class="pill success">1 PR</span>`)}
+          ${rowCard("B", "Pull B", "Monday · 58 min · 5,120 kg", `<span class="pill">21 sets</span>`)}
+          ${rowCard("L", "Legs", "Saturday · 72 min · 8,420 kg", `<span class="pill">Heavy</span>`)}
+          ${rowCard("U", "Upper", "May 14 · 54 min · 4,860 kg", `<span class="pill">Done</span>`)}
+        </div>
+      `, "F"),
+
+      "10-workout-detail": (theme) => sub(theme, "Push A", "May 20 · 64 minutes", `
+        <section class="hero">
+          <div class="grid3">${metric("64", "Min")}${metric("6.2k", "Kg")}${metric("24", "Sets")}</div>
+          <div class="panel mt12" style="box-shadow:none;background:color-mix(in srgb,var(--success) 10%,var(--elevated))">
+            <p class="label" style="color:var(--success)">New PR</p><h2 class="mt6">Bench Press · 102.5 kg x 3</h2>
+          </div>
+        </section>
+        ${section("Exercises")}
+        <div class="stack">
+          ${rowCard("B", "Bench Press", "95 x 8 · 100 x 5 · 102.5 x 3", `<span class="pill success">PR</span>`)}
+          ${rowCard("I", "Incline DB Press", "30 x 10 · 32 x 8 · 32 x 8", `<span class="pill">3 sets</span>`)}
+          ${rowCard("F", "Cable Fly", "18 x 12 · 20 x 10 · 20 x 10", `<span class="pill">Pump</span>`)}
+        </div>
+        ${section("Notes")}
+        <div class="panel"><p class="sub">Bench moved fast. Keep the same warmup and attempt 105 kg next heavy push.</p></div>
+      `),
+
+      "11-exercise-detail": (theme) => sub(theme, "Bench Press", "Chest · Barbell", `
+        <section class="hero">
+          <p class="label">Best top set</p>
+          <h1 class="large-title mt6">102.5 kg</h1>
+          <p class="sub">For 3 reps · May 20</p>
+        </section>
+        ${section("Top Set Progression")}
+        ${chart("var(--success)")}
+        ${section("Recent Sessions")}
+        <div class="stack">
+          ${rowCard("1", "Today", "102.5 x 3 · 24 total reps", `<span class="pill success">PR</span>`)}
+          ${rowCard("2", "May 13", "100 x 5 · 26 total reps", `<span class="pill">Strong</span>`)}
+          ${rowCard("3", "May 06", "97.5 x 6 · 25 total reps", `<span class="pill">Base</span>`)}
+        </div>
+        <div class="panel mt12"><p class="label">Form Notes</p><p class="sub">Pause first rep. Keep shoulder blades packed before unrack.</p></div>
+      `, "+"),
+
+      "12-pr-detail": (theme) => sub(theme, "Bench PR", "All-time record", `
+        <section class="hero">
+          <p class="label" style="color:var(--success)">Current personal record</p>
+          <div class="row mt8"><h1 class="large-title">102.5 kg</h1><span class="pill success">1RM</span></div>
+          <p class="sub">Set on May 20 during Push A.</p>
+        </section>
+        ${section("All-time Progression")}
+        ${chart()}
+        ${section("PR Attempts")}
+        <div class="stack">
+          ${rowCard("1", "102.5 kg x 3", "May 20 · current", `<span class="pill success">Current</span>`)}
+          ${rowCard("2", "100 kg x 5", "May 13", `<span class="pill">Previous</span>`)}
+          ${rowCard("3", "97.5 kg x 6", "May 06", `<span class="pill">Previous</span>`)}
+        </div>
+        <div class="panel mt12"><p class="label">PR Note</p><p class="sub">Attempt 105 kg after two successful volume weeks.</p></div>
+      `),
+
+      "13-profile": (theme) => shell(theme, "profile", `
+        <div class="header"><div><p class="eyebrow">Private profile</p><h1>You</h1></div><span class="pill accent">Free</span></div>
+        <section class="hero" style="min-height:132px">
+          <div class="row"><div><h2>VELT Pro</h2><p class="sub">Advanced analytics, themes and exports.</p></div><span class="pill accent">Preview</span></div>
+          <div class="button secondary mt12">Open Pro</div>
+        </section>
+        ${section("Appearance")}
+        <div class="panel">
+          <div class="swatches"><div class="swatch active"></div><div class="swatch"></div><div class="swatch"></div><div class="swatch"></div><div class="swatch"></div></div>
+          <div class="row mt12"><p class="sub">Theme</p><h3>Current Theme</h3></div>
+        </div>
+        ${section("Training")}
+        <div class="stack">
+          ${rowCard("R", "Default Rest Timer", "90 seconds", `<span class="pill">Edit</span>`)}
+          ${rowCard("L", "Experience Level", "Intermediate", `<span class="pill">Edit</span>`)}
+          ${rowCard("K", "Weight Unit", "Kilograms", `<span class="pill success">kg</span>`)}
+        </div>
+        ${section("Data")}
+        <div class="panel row"><h3 style="color:var(--error)">Delete All Data</h3><span class="pill error">Danger</span></div>
+      `),
+
+      "14-pro": (theme) => sub(theme, "VELT Pro", "Upgrade workspace", `
+        <section class="hero" style="min-height:178px">
+          <p class="label">Premium tools</p>
+          <h1 class="large-title mt8">Sharper insight without noise.</h1>
+          <p class="sub">Advanced analytics, export, premium themes and early features.</p>
+        </section>
+        ${section("Included")}
+        <div class="stack">
+          ${rowCard("A", "Advanced Analytics", "Muscle balance, trends, load maps", `<span class="pill accent">Pro</span>`)}
+          ${rowCard("T", "Premium Themes", "Rose, emerald and warm paper", `<span class="pill">New</span>`)}
+          ${rowCard("E", "Data Export", "CSV backup for workouts and nutrition", `<span class="pill success">Private</span>`)}
+        </div>
+        ${section("Plans")}
+        <div class="grid2">
+          <div class="panel"><p class="label">Monthly</p><h2 class="mt8">$4.99</h2><p class="sub">Cancel anytime</p></div>
+          <div class="panel" style="border-color:var(--accent)"><p class="label" style="color:var(--accent)">Yearly</p><h2 class="mt8">$29.99</h2><p class="sub">Best value</p></div>
+        </div>
+        <div class="button mt12">Start Pro</div>
+        <div class="button secondary mt8">Restore Purchase</div>
+      `, "x")
+    };
+
+    function render(screen, theme) {
+      return (templates[screen] || templates["00-onboarding"])(theme);
+    }
+
+    const params = new URLSearchParams(location.search);
+    const screen = params.get("screen") || "00-onboarding";
+    const theme = params.get("theme");
+    const root = document.getElementById("root");
+
+    if (theme) {
+      document.documentElement.className = "";
+      document.body.className = "";
+      root.innerHTML = render(screen, theme);
+    } else {
+      document.documentElement.className = "board-html";
+      document.body.className = "board";
+      root.innerHTML = `<div class="board-grid">${Object.entries(themes).map(([key, name]) => `<div><div class="label-out">${name}</div>${render(screen, key)}</div>`).join("")}</div>`;
+    }
+  </script>
+</body>
+</html>

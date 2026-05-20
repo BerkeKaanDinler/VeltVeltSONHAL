@@ -1,0 +1,55 @@
+{
+  "@@locale": "tr",
+
+  "tabHome": "Ana sayfa",
+  "tabTrain": "Antrenman",
+  "tabNutrition": "Beslenme",
+  "tabProgress": "İlerleme",
+  "tabProfile": "Profil",
+
+  "actionStart": "Başla",
+  "actionStartWorkout": "Antrenmanı başlat",
+  "actionFinish": "Bitir",
+  "actionContinue": "Devam",
+  "actionCancel": "Vazgeç",
+  "actionSave": "Kaydet",
+  "actionDelete": "Sil",
+  "actionAdd": "Ekle",
+  "actionEdit": "Düzenle",
+  "actionRetry": "Yeniden dene",
+  "actionSkip": "Atla",
+  "actionBack": "Geri",
+
+  "homeTodayPlan": "Bugünün planı",
+  "homeStartWorkout": "Antrenmanı başlat",
+  "homeQuickAccess": "Hızlı erişim",
+  "homeRepeatSession": "Geçmiş seansı tekrarla",
+  "homeLastWorkout": "Son antrenman",
+  "homeEmpty": "Boş",
+
+  "trainExercises": "Egzersizler",
+  "trainPrograms": "Programlar",
+  "trainRoutines": "Rutinler",
+  "trainAddSet": "Set ekle",
+  "trainAddExercise": "Egzersiz ekle",
+  "trainWarmup": "Isınma",
+  "trainRest": "Dinlenme",
+
+  "profileSignInTitle": "Senkronize için giriş yap",
+  "profileSignInSub": "Antrenmanlarını yedekle, cihaz değiştir, veri kaybetme",
+  "profileSignOut": "Çıkış yap",
+  "profilePro": "PRO",
+  "profileFree": "ÜCRETSİZ",
+
+  "paywallStartTrial": "7 gün ücretsiz dene",
+  "paywallRestore": "Satın alımları geri yükle",
+  "paywallContinueFree": "Ücretsiz devam et",
+
+  "errorGeneric": "Bir şeyler ters gitti. Lütfen tekrar dene.",
+  "errorOffline": "Çevrimdışısın.",
+
+  "weightKg": "kg",
+  "weightLb": "lb",
+  "unitsKilograms": "Kilogram",
+  "unitsPounds": "Pound"
+}

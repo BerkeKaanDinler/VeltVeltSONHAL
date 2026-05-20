@@ -8,7 +8,7 @@ class PrefsService {
     _p = await SharedPreferences.getInstance();
   }
 
-  static String get theme => _p.getString('theme') ?? 'iron';
+  static String get theme => _p.getString('theme') ?? 'warm';
   static Future<void> setTheme(String v) => _p.setString('theme', v);
 
   static String get unit => _p.getString('unit') ?? 'kg';
@@ -61,6 +61,12 @@ class PrefsService {
 
   static String get fitnessGoal => _p.getString('fitness_goal') ?? 'Build Muscle';
   static Future<void> setFitnessGoal(String v) => _p.setString('fitness_goal', v);
+
+  static String get displayName => _p.getString('display_name') ?? 'Athlete';
+  static Future<void> setDisplayName(String v) => _p.setString('display_name', v);
+
+  static bool get showRpe => _p.getBool('show_rpe') ?? false;
+  static Future<void> setShowRpe(bool v) => _p.setBool('show_rpe', v);
 
   static String? nutritionDay(String key) => _p.getString(key);
   static Future<void> saveNutritionDay(String key, String jsonStr) =>
